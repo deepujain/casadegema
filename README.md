@@ -14,9 +14,11 @@ It is one self-contained `index.html` — hand-drawn Canvas 2D art, spring physi
 
 ## How to play
 
-The garden starts bare. Pick up the watering can and water the tree bed — a bougainvillea grows. Then explore. Each season has its own gems; each one pops up where you found it and flies to the counter in the top-left. Find them all and Oli says goodbye to the season, a swirl of petals, leaves or snow sweeps across the garden, and the next season begins. A full year takes about 10–15 minutes.
+The garden starts bare. Pick up the watering can and water the tree bed — a bougainvillea grows. Then explore. Each season has its own gems; each one pops up where you found it and flies to the counter in the top-left. Find them all and Oli says goodbye to the season, and the next season arrives on its own element — a rising sun for summer, a gust of wind full of leaves for autumn, a snowfall for winter — changing the trees and flowers as it passes over them. A full year takes about 10–15 minutes.
 
-### 🌸 Spring (8 gems)
+Every season has five gems. One of them is always a little visitor hiding in one of the blue flower pots on the tower wall — a different pot each season. Tapping a pot does nothing but puff a few petals; each season's visitor only comes out for that season's action.
+
+### 🌸 Spring (5 gems)
 
 | Gem | How to find it |
 | --- | --- |
@@ -24,38 +26,49 @@ The garden starts bare. Pick up the watering can and water the tree bed — a bo
 | 🌸 Shake | Grab a branch and shake it — every petal falls on its own. |
 | 🌱 Pots | Water every pot so all the plants grow. |
 | 🦋 Butterfly | Tap the paint palette on the ground and pick a new petal color. Your butterfly cursor changes color too. |
-| 🏮 Lantern | Tap a lantern by the door. It goes out and its fireflies drift off to the tree (or the balcony railing). |
-| 🦉 Night | Turn both lanterns off: sunset, then night — Oli hoots and flies a loop around the tree. |
-| 🎈 Balloon | Pick up the twig lying on the ground and pop the girl's balloon with it. |
-| 🖍️ Name | Pick up the chalk from the table, tap the easel, and write a name. |
+| 🐣 Nest | Water the pots on the tower wall with the can. Each watered pot bursts into a fuller bloom that stays, and one of them hides a nest of chicks. The nest stays in its pot all year; the chicks chirp now and then in spring, and any time your butterfly comes close (with music on). They grow a little each season, and on the first winter morning (turn a lantern back on) they fly off one by one, somewhere warm. |
 
-### ☀️ Summer (3 gems)
+Tapping a lantern any time of year sends its fireflies off to the tree (or the balcony railing).
+
+### ☀️ Summer (5 gems)
+
+Her little sister walks out of the front door and holds her hand for the rest of the year, dressed for each season.
 
 | Gem | How to find it |
 | --- | --- |
-| 🪁 Kite | A kite is tangled in the tree. Shake the branches to free it — she flies it from her hand. |
-| 🌻 Sunflower | Water the seed between the little pots. |
+| 🪁 Kite | A kite is tangled in the tree, its string running down to her hand. Shake the branches and it wriggles loose, lifts out of the canopy and flies from her hand. |
+| 🌻 Sunflower | Water the seed next to the little pot by the tower (pouring on that pot counts too). |
 | 🦋 Friends | Tap the blue jar on the bench. Three butterflies follow you around. |
+| 🎈 Balloon | Pick up the twig lying on the ground and pop the girl's balloon with it. |
+| 🐞 Ladybug | Water the thirsty wall pots, or rest your butterfly on one (hold still for a moment; on a phone, tap and wait), until a ladybug comes to say hello. |
 
-### 🍂 Autumn (3 gems)
+### 🍂 Autumn (5 gems)
 
 | Gem | How to find it |
 | --- | --- |
-| 🍁 Leaves | Pick up the rake and sweep the fallen leaves into a pile. She jumps in. |
-| ☂️ Umbrella | Tap the grey cloud to make it rain, then tap the umbrella by the wall. |
+| 🍁 Leaves | Pick up the rake and sweep over the fallen leaves any way you like (it scrapes and crunches). Every leaf you touch skitters onto the little heap at her feet, which grows as you go. When the courtyard is clear she jumps in. |
+| ☂️ Umbrella | Tap the grey cloud to make it rain, then tap the umbrella by the wall. She tilts it over her little sister so it keeps them both dry. |
 | 🎃 Pumpkin | Water the little patch of soil in front of the pot. |
+| 🦉 Night | Turn both lanterns off: sunset, then night — Oli hoots and flies a loop around the tree. |
+| 🐭 Mouse | Press on a wall pot and wiggle it until a field mouse with an acorn peeks out. |
 
-### ❄️ Winter (3 gems)
+### ❄️ Winter (5 gems)
+
+Winter opens on a long night: the lanterns are out and their fireflies rest in the bare tree. Relight the lanterns whenever you like.
 
 | Gem | How to find it |
 | --- | --- |
 | ⛄ Snowman | Tap the three snowy mounds to roll snowballs, then tap the snowman to give him a nose. |
 | 🔥 Hearth | Tap the cold chimney. Smoke rises and the windows glow. |
 | ✨ Lights | Tap the balcony railing to string up fairy lights. |
+| 🖍️ Name | Pick up the chalk from the easel's ledge, tap the board, and write her name (with `?name=` it's already there; sign it once more). |
+| 🐦 Robin | Pick up the twig and tap or brush the snowy wall pots with it (any part of the twig works). Each pot sheds a little snow; one of them has a robin. |
 
-Find the last winter gem and "Happy Daughter's Day, *name*" rises from the chimney with hearts, then gently fades.
+Find the last winter gem and "Happy Daughter's Day, *name*" comes out of the chimney letter by letter, each one floating up to its place, with hearts; then it gently fades.
 
 **Stuck?** Tap Oli for a hint. A feather also roams the garden: when the little alarm clock at the corner of the house runs down (a random 18–48 seconds), it rings and the feather flies to your next gem. Tap the clock to ring it early.
+
+**Really stuck?** Every half a minute or so a little teddy bear peeks out from behind the casa: over the chimney, over the roof, around the tower, or around the far corner by the clock. Tap him before he ducks back and he shows you every gem still hidden this season, one by one (freeing the kite, opening the jar, building the snowman and so on).
 
 **Keys:** `Esc` puts down whatever you're holding · `M` toggles music · `R` starts the year over from spring.
 
@@ -87,7 +100,7 @@ To host it, drop `index.html` anywhere that serves static files (GitHub Pages, N
 - **Rendering:** Canvas 2D on a fixed 1200×950 logical stage scaled to the window. The house, sky and ground are pre-rendered once into offscreen layers using a watercolor "wash" technique (layered, low-alpha, randomly deformed polygons + paper grain). Small screens crop the empty margins.
 - **Tree:** procedurally grown segments with spring physics; grabbing a branch bends its whole parent chain. Petals are attached along segments and detach when shaken hard, then flutter down and settle on the ground.
 - **Day cycle:** multiply-tinted overlays that ease between day, dusk, night and dawn based on how many lanterns are off.
-- **Seasons:** a `CHAPTERS` array (spring, summer, autumn, winter) holds each season's gems, Oli's lines, a color grade and weather. Autumn and winter repaint every tree with their own sprites (falling leaves, snow on the branches); winter adds snow on the roofs and courtyard, and autumn a rain cloud.
+- **Seasons:** a `CHAPTERS` array (spring, summer, autumn, winter) holds each season's gems, Oli's lines, a color grade and weather. Trees follow the year: blossoms and fresh leaves in spring, full green leaves in summer, turning leaves in autumn, and bare branches in winter where snow slowly builds up as it falls. Winter adds snow on the roofs and courtyard, and autumn a rain cloud.
 - **Oli:** a speech bubble narrates each season, reacts to discoveries, and gives a hint when tapped.
 - **Music:** fully generative Web Audio — an Andalusian cadence (Am–G–F–E) with pads, plucks, chimes and a convolution reverb, plus petal-flutter, pouring water and rain, pops, owl hoots and lantern chimes. Silent until you tap the speaker.
 - **Gems:** the current season's gem list drives the counter, the fly-to-counter effect, Oli's hints and the feather.
