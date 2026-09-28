@@ -66,6 +66,8 @@ To host it, drop `index.html` anywhere that serves static files (GitHub Pages, N
 
 Casa de Gemas was built entirely through conversation with **Claude Opus 5.5** in Cursor — no code written by hand. It was inspired by a post from [@thebuggeddev](https://x.com/thebuggeddev) showing Claude building "a little artistic world in pure JavaScript where a tree grows over time, you can grab and shake its branches, and the leaves fall naturally."
 
+Want to build your own? The full prompt is in [`SKILL.md`](SKILL.md#the-full-prompt).
+
 ## License
 
 [MIT](LICENSE) — make one for someone you love.

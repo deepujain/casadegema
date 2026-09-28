@@ -88,6 +88,92 @@ Use Playwright (`npm i playwright@1`) against `file://…/index.html`:
 - Check a mobile context too (`viewport 844×390, hasTouch, isMobile`) and use `page.touchscreen.tap`.
 - Take screenshots and look at them; most bugs here are visual.
 
+## The full prompt
+
+To recreate Casa de Gemas from scratch in one shot, give a coding agent this prompt. It describes the final design, including lessons learned along the way.
+
+```text
+Build a single self-contained index.html (pure JavaScript + Canvas 2D, no libraries, no
+images, no build step) called "Casa de Gemas" — a little garden of hidden gems, made as a
+Happy Daughter's Day gift.
+
+SCENE
+- Soft watercolor illustration on warm cream paper. Fixed 1200×950 logical stage scaled to
+  fit the window (letterboxed; on small screens crop the empty margins). Pre-render static
+  art into offscreen layers using layered low-alpha deformed polygons plus paper grain.
+- A whitewashed Spanish house: a tower with a terracotta roof, blue shutters and wall pots,
+  a main house with a tiled roof, a chimney, an arched wooden door with blue-tile surround
+  and steps, a balcony with iron railing, a barred window with flowers, exposed brick
+  patches, two lanterns beside the door.
+- In the courtyard: a round brick tree bed (no pot for the main tree), three small pots, a
+  wooden bench/table with two jars, a little pink speaker and a stick of chalk, a wooden
+  paint palette on the ground, a twig lying on the ground, a chalkboard easel on the right,
+  a cute watering can, and a little girl seen from behind holding a heart balloon on a
+  string, with a bow on the back of her dress.
+- Custom cursor: a butterfly in the current petal color, with sparkles. It perches (slow
+  wings) on whatever tool you hold. When the pointer is away it flies to the girl's dress
+  and rests there as her bow, full size, still fluttering.
+
+GROWTH
+- The garden starts bare. Pick up the watering can (click), click-and-hold to pour — water
+  drops, splashes and a pouring sound. Watering the bed grows a bougainvillea tree
+  (procedural segments with stable spring physics; grabbing a branch bends its parent
+  chain). Watering each pot grows a small plant. Every tree uses a different petal color.
+  Put the can back by clicking its spot or pressing Esc; it also returns by itself when
+  everything is planted.
+- Petals: shaking a branch hard detaches petals that flutter down with wind and settle on
+  the ground, then slowly fade; bare spots regrow.
+
+GEMS (8) — a counter at the top-left ("hidden gems n/8" with 8 gem icons). Each discovery
+pops a gem at that spot which then flies to the counter and lights it up.
+1. Music: tap the speaker on the table. Nothing else starts music.
+2. Shake: shake a branch.
+3. Pots: grow every plant.
+4. Butterfly: tap the palette, pick a new petal color (panel closes itself after picking).
+5. Lantern: tap a lantern — it goes out and its fireflies fly off to hang in the tree
+   canopy (or the balcony railing if there's no tree); relighting calls them back.
+6. Night: one lantern off = sunset tint, both off = night with stars, moon and a warm
+   balcony glow; an owl flies in, perches on the tower roof and hoots. Relighting one =
+   early-morning tint, both = day. The owl leaves slowly only when both are on. No sun,
+   no "good morning" or "day 2" text.
+7. Balloon: pick up the twig and pop the balloon with its tip (a mouse hover never pops
+   it). "pop!" + shards; the twig floats back home slowly; the girl's arm lowers to rest;
+   the balloon does not return. Balloon is sky blue so it never matches the butterfly.
+8. Name: pick up the chalk, tap the easel, type a name (DOM input over the board), Enter.
+   The name is written on the board in chalk. ?name= in the URL pre-fills it.
+
+HINTS
+- A small feather roams the garden on a gentle path. It never hints right away. After a
+  random 18–48 s without a discovery (and a few seconds idle), it flies to the next gem's
+  location for 10 s (or to the tool that gem needs first).
+- A cute pink alarm clock stands on the ground at the bottom-right of the house: a gold
+  wedge and a single hand sweep down to zero, with a small seconds number; it rings and
+  wobbles when the hint arrives. Tapping it rings the hint early.
+
+ENDING
+- After all 8 gems: "Happy Daughter's Day," and the name on a second line rise from the
+  chimney in a script font with a pink-to-orange gradient, smoke puffs and floating
+  hearts; it fades after ~18 s.
+
+TITLE
+- On load, "Casa de Gemas" in a script font with "a little garden of hidden gems" under
+  it fades in at the top (with padding so the swashes aren't clipped); it fades on the
+  first click.
+
+SOUND (Web Audio, all generated, silent until the speaker is tapped)
+- Gentle Andalusian cadence Am–G–F–E: soft pads, plucked notes, chimes, convolution
+  reverb. Petal-flutter notes only while your hand is shaking a branch (short notes that
+  fade within ~0.6 s of letting go — never loop), water pour, pop, owl hoots, lantern
+  chimes. Unlock audio on touchend for iOS.
+
+TOUCH
+- Works with fingers: taps snap to the nearest interactive thing within fingertip reach,
+  bigger branch/balloon hit areas, no double-tap zoom, no text selection, no stuck hover
+  glows; in portrait show "turn your phone sideways for a bigger garden".
+
+KEYS: Esc drops the held tool, M toggles music, R replants.
+```
+
 ## House rules
 
 - One file, no dependencies, no external images. Google Fonts (Great Vibes, Caveat) are optional; fall back to system script fonts.
