@@ -68,41 +68,9 @@ See [`SKILL.md`](SKILL.md) for an architecture guide aimed at people (and coding
 
 Casa de Gemas was built entirely through conversation with **Claude Opus 5.5** in Cursor — no code written by hand. It was inspired by a post from [@thebuggeddev](https://x.com/thebuggeddev) showing Claude building "a little artistic world in pure JavaScript where a tree grows over time, you can grab and shake its branches, and the leaves fall naturally."
 
-Below is every prompt, in order, exactly as typed (typos included — that's how real iteration looks). Two small edits: a local file path was removed, and a pasted assistant reply was trimmed out of one message.
+Below are the prompts that turned it into a game, in order, exactly as typed (typos included — that's how real iteration looks).
 
-### 1. The first world
-
-> *(screenshot of @thebuggeddev's post)* can you really do this. ? i have claude model selected
-
-> too violet when i move mouse
-> i want a spanish house in the background. beaifl
-
-> change colors of the petals
->
-> other pots when i click should start growing different color petals
->
-> add a seren music behind
-
-> can such a big tree grow in the pot. main plant make it like a tree not in a pot. aestithic
->
-> Like the music
-
-> happy daughter day above the chimney after all the plants grow.
-
-> you gorgot to add girl holding a ballon facing home
-
-> all petal colors should be different
-> hide petal selector, it shows up when i click palette lying the grojund.
-
-> mouse pointer can you make it different like a something interesting rather than a dot circle.
-
-### 2. Shipping it
-
-> how big is this file ? can i host it in spark ? fun side project
-
-> do it and deploy
-
-### 3. Turning it into a game
+### 1. Turning it into a game
 
 > when i shake the tree. i need a like a new shake music that flutters of all petals
 > when i tap the laps near door, the lap should go off and the Firefly that make the light fly away
@@ -153,11 +121,11 @@ Below is every prompt, in order, exactly as typed (typos included — that's how
 
 > deploy
 
-### 4. Making it personal
+### 2. Making it personal
 
 > Add a eisel where i can write a name. so that Happy Daughters DAy, Shanaya can show up. and it becomes custamization. May be this is another gem. have a eisel lying around and a chalk on the table
 
-### 5. Polish
+### 3. Polish
 
 > after i shake branch. and click the music goes in a loop for a while. main music is good. the . branch shake that causes the petal move sound that one. this needs a fix
 >
@@ -192,7 +160,7 @@ Below is every prompt, in order, exactly as typed (typos included — that's how
 > reduce the number size. and have a dial one dial move until timer
 > the count down on clock face must be random for next hint.
 
-### 6. Launch
+### 4. Launch
 
 > deploy
 
