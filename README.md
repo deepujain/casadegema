@@ -4,7 +4,7 @@
 
 Casa de Gemas is a tiny interactive watercolor world made as a Happy Daughter's Day gift: a whitewashed Spanish house, a bare courtyard, a watering can, and 8 hidden gems waiting to be discovered. Find them all and a message rises from the chimney — with *her* name in it.
 
-**Play it:** https://1xaispark.com/games/casa-de-gemas
+**Play it:** https://1xaispark.com/games/casa-de-gemas · mirror on GitHub Pages: https://deepujain.github.io/casadegema/
 
 ![Casa de Gemas](screenshot.png)
 
