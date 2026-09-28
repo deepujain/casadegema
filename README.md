@@ -6,7 +6,7 @@ Casa de Gemas is a tiny interactive watercolor world made as a Happy Daughter's 
 
 **Play it:** https://1xaispark.com/games/casa-de-gemas · mirror on GitHub Pages: https://deepujain.github.io/casadegema/
 
-![Casa de Gemas](screenshot.png)
+![Casa de Gemas](preview.png)
 
 It is one self-contained `index.html` — hand-drawn Canvas 2D art, spring physics for every branch and petal, and music generated live with the Web Audio API. No images, no libraries, no build step.
 
