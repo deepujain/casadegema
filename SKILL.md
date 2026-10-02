@@ -13,11 +13,11 @@ Everything lives in one file, `index.html` (~3,500 lines): CSS and a few DOM ele
   - Logical → CSS pixels: `(OX + B * x) / dpr`
   - CSS pixels → logical: `(css * dpr - OX) / B`
   - `setMouse(e)` already converts pointer events into `mouse.x/y` in logical units.
-- **Layers:** static art is painted once into offscreen canvases (`bg` via `drawBg`, `fg` via `drawFg`) inside `resize()`. Anything that animates or changes state is drawn every frame in `render(dt)`. If you change static art, edit `drawBg`/`drawFg`; it's re-rendered on resize.
+- **Layers:** static art is painted once into offscreen canvases (`bg` via `drawBg`, `fg` via `drawFg`, plus the `carpet`) inside `resize()`. They have their own frame (`LB`, `LOX`, `LOY`, set as `B`/`OX`/`OY` while `newLayer` paints) and `blit(layer)` draws them through the current camera. On desktop that frame equals the screen. On phones it covers `LAYER` at a fixed scale, so panning and zooming never repaint. Anything that animates or changes state is drawn every frame in `render(dt)`. If you change static art, edit `drawBg`/`drawFg`.
 - **Watercolor helpers:** `wash(g, points, color, layers, alpha, amt)` for soft painted shapes, `stucco`, `bricks`, `wallPot`. Seeded randomness (`R = mulberry32(seed)`) keeps static art identical between reloads.
 - **Time:** `time` is global seconds; `T` is time since the last `plant()` (replant). `dt` is capped at 0.033.
 - **Useful landmarks (logical coords):** house stucco x 425–905, y 360–872; chimney `CHIMNEY {829, 230}`; main tree `ROOT {990, 884}` in the tree bed `BIG_POT {cx ROOT.x, by 902}` (right of the house, so the facade stays clear); pots in `POTS`; tower wall pots `WALL_POTS`; bench top y 842, x 718–806; speaker `SPEAKER {786, 842}`; lanterns `LAMPS`; owl perch `PERCH {355, 134}`; girl `GIRL {700, 934}`; palette `ART {866, 914}`; twig `TWIG_HOME {600, 938}`; can `CAN_HOME {548, 924}`; easel `EASEL` (left, in front of the tower: board x 394–486, y 808–872) with the chalk `CHALK_HOME` on its ledge; clock `CLOCK {900, 868}`; sunflower seed `SEED {300, 896}`; pumpkin patch `PATCH {262, 936}`; butterfly jar `JAR {740, 834}`; rake `RAKE_HOME {772, 944}`; leaf pile `PILE {686, 938}`; umbrella `UMB {868, 874}`; rain cloud `CLOUD {640, 212}`; snowman `SNOWMAN {1074, 944}` and its three `MOUNDS`; balcony railing x 672–848, y 488–542.
-- **Mobile crop:** phones only show roughly x 222–1098, so keep new interactive things inside that band.
+- **Mobile crop:** the phone camera never shows past `CROP` (x 222–1098, y 70–950), so keep new interactive things inside it.
 
 ## Frame order (inside `render`)
 
@@ -40,7 +40,7 @@ Anything drawn before the overlays gets tinted by the season and the night (obje
 - Tree sprites come from `seasonSprite(p)` (spring: `tree.pal` blossoms with a third `leafSpr`; summer: all `summerLeaf`; autumn: `SPRITES.autumn`; winter: `null`, meaning bare). In winter `snowAcc` climbs 0→1 over ~45 s; a bare petal slot shows a small `SPRITES.snow` clump once `snowOn(p)` (its random `p.th` is under `snowAcc * SNOW_COVER`), and flatter branch segments get a white line on top. `tree.pal` always keeps the chosen bloom color. `recolor(tree, pal, delay)` flags petals to swap; `arriveDelay(n, x, y)` times each swap to when the season's element reaches that spot.
 - Painted plants use `PL` (from `PLANT_COLS[season]`). `repaintPlants(n)` repaints the background and foreground layers; `drawOldLayer` keeps the previous layer visible, clipped to where the new season has not arrived yet (outside a growing circle from `SUN`, right of the gust front, below the snow line). `gust(t)` adds to `wind()` during the autumn transition.
 - Draw seasonal things with `globalAlpha = SLV[i]` so they fade in and out with the cross-fade. `drawSeasonTint` applies the per-season color grade from `TINTS`; `DRIFT[season]` sets how often petals fall on their own (many in autumn, none in winter).
-- `drawMessage` only runs in the last chapter, so the Daughter's Day ending comes after winter.
+- `drawMessage` only runs in the last chapter, so the birthday ending comes after winter.
 - `?season=summer|autumn|winter` calls `jumpToSeason()`: grows every tree, pops the balloon (from autumn on), marks earlier gems done, and leaves persistent objects (sunflower, pumpkin) grown.
 - To add a season: add a `CHAPTERS` entry (and a `TINTS`, `DRIFT`, `SEASON_PAL`, `PLANT_COLS` and `SIS_WEAR` slot, a `seasonSprite` case, and an element in `spawnSwirl`/`arriveDelay`/`drawOldLayer`), set up its objects in `setSeason`, draw them in `drawSeasonBack`/`drawSeasonFront`, and add taps to `seasonTap`, `seasonHover` and `seasonAnchors`.
 
@@ -94,7 +94,7 @@ Wall-pot visitors: `NOOKS[season]` (nest, ladybug, mouse, robin) hides in `WALL_
 - From summer on, the little sister (`drawSister`, standing at `SIS {646, 930}`, scale `.86`) walks from the door showing her face, then turns her back and eases `sister.hold` to 1. `drawGirl` then reaches her left hand out past the dress (`GIRL.left`), and the sister's right hand meets it. Her clothes come from `SIS_WEAR[season]`; she stays for the rest of the year.
 - The kite's string runs from `GIRL.hand` (set every frame by `drawGirl`) to the kite's crossbar, both while stuck and in flight. On release `kite.from` is read before the state changes to `'rise'`, so it lifts out of its own branch; `kiteUp()` and `umbUp()` keep her arm raised. `umbUp()` is true only while it rains (`umbrella.open` just records that the umbrella was found). `canopy(x, y, r)` draws the open umbrella as a dome: apex on top, six panels curving down to a scalloped rim centered at `(x, y)`. Held up, it tilts from her hand to midway between `GIRL` and `SIS` and widens (r up to 68) to cover both sisters; `umbrella.shade` records the sheltered span so raindrops splash on the canopy instead of falling on them.
 
-Teddy: `teddy` peeks from one of `TEDDY_SPOTS` (chimney top, roof ridge, tower left edge, right house corner; `dir` up/left/right) every 25–40 s while gems remain, once `mainTree` exists and the season isn't ending. `drawTeddy` (right after the season back) clips him to the far side of that edge so he looks hidden behind the house, with paws over the edge. `teddyAt` hit-tests his head (hover `'teddy'`, touch anchor via `seasonAnchors`). `tapTeddy` starts `teddy.help`, which every 1.3 s calls `teddyShow(s)` for the next remaining gem, using the gem's own action where there is one (nook `stirNook`, kite rise, sunflower/pumpkin sprout, `openJar`, rain + `openUmbrella`, snowman built with nose, `lightHearth`, `stringLights`) and plain `found(id)` otherwise. `setSeason` resets him.
+Puppy: `pup` peeks from one of `PUP_SPOTS` (chimney top, roof ridge, tower left edge, right house corner; `dir` up/left/right) every 25–40 s while gems remain, once `mainTree` exists and the season isn't ending. `drawPup` (right after the season back) clips him to the far side of that edge so he looks hidden behind the house, with paws over the edge: a golden head with perky ears drawn behind it that stick out above, with folded tips that flick as he pops up, an eye patch, a white muzzle, a shiny nose, and a panting tongue while he helps. `pupAt` hit-tests his head (hover `'pup'`, touch anchor via `seasonAnchors`). `tapPup` plays `Music.woof()` and starts `pup.help`, which every 1.3 s calls `pupShow(s)` for the next remaining gem, using the gem's own action where there is one (nook `stirNook`, kite rise, sunflower/pumpkin sprout, `openJar`, rain + `openUmbrella`, snowman built with nose, `lightHearth`, `stringLights`) and plain `found(id)` otherwise. `setSeason` resets him.
 
 ## Hints, feather, clock
 
@@ -114,7 +114,17 @@ Teddy: `teddy` peeks from one of `TEDDY_SPOTS` (chimney top, roof ridge, tower l
 
 ## Touch
 
-`touchMode` is set per pointerdown. `snapTouch()` moves a tap to the nearest entry of `touchAnchors()` within ~30 CSS px (unless a branch is closer), `pick()` widens its radius, and the balloon pops from farther away. `pointerleave` clears `hover` so glows don't stick. A CSS media query shows the "turn your phone sideways" pill in portrait on coarse pointers.
+`touchMode` is set per pointerdown. `snapTouch()` moves a tap to the nearest entry of `touchAnchors()` within ~30 CSS px (unless a branch is closer), `pick()` widens its radius, `nookNear` finds the wall pot for a winter twig tap, and the balloon pops from farther away. `pointerleave` clears `hover` so glows don't stick. Each tap leaves a soft ring (`ripples`).
+
+**Camera (coarse pointers only, `cam.on`).** `cam {x, y, z}` is the view center in garden units and the zoom in CSS px per unit. `applyCam()` clamps the view to `CROP` (centering it when the view is bigger) and sets `B`/`OX`/`OY`. `camDefault` gives portrait about 1000 units tall and landscape about 600, both between `cam.min` (the whole crop) and `cam.max`. Gestures:
+- Two fingers pinch and pan (`startPinch`/`movePinch`).
+- One finger that slides more than 10 px without holding a branch, pot or tool drags the view (`panCand` becomes `pan`).
+- Carrying a tool to within ~70 px of the screen edge pans in `updateCam`.
+- `camFocus(x, y)` glides there when the point is near or past the edge: Oli's hints (`feather.focus`), the finale (the chimney), and the board when writing (raised above the keyboard).
+
+`inView` lets the puppy prefer a spot on screen. Oli's bubble keeps at least 13 px text and stays inside the view, and it drops its tail when he is off screen. A "drag to look around · pinch to zoom" pill shows for 7 s.
+
+**Finger vs. working point.** `finger` is the spot under the finger and `mouse` is the point the game uses. Without a tool they are the same. With one, `liftVec()` offsets the grip so the tool is not under the finger: the can is shifted so its tilted spout pours about 36 px above the fingertip, and the twig, rake and chalk are raised 26–40 px. Pickups and put-downs (`canAt`, `twigAt`, `rakeAt`, `chalkAt`) test `finger`, so you tap the tool's home to put it back. After a pickup, `relift()` reapplies the offset. On touch the butterfly perches about 34 px above `mouse`; gems still use `mouse`.
 
 ## Customizing
 
@@ -131,7 +141,7 @@ Use Playwright (`npm i playwright@1`) against `file://…/index.html`:
 - Listen for `pageerror`; zero errors is the bar.
 - Drive state directly through globals, for example `waterPlant(BIG_POT)` to grow the tree, `SURPRISES.forEach(s => found(s.id))` to finish a season and watch the transition, or `popBalloon()`. Open `?season=winter` to test a later season directly.
 - Convert logical coordinates to page coordinates with `page.evaluate(([x, y]) => [(OX + B * x) / dpr, (OY + B * y) / dpr], [x, y])` before `page.mouse.click`.
-- Check a mobile context too (`viewport 844×390, hasTouch, isMobile`) and use `page.touchscreen.tap`.
+- Check phone contexts too (`390×844` and `844×390`, `hasTouch, isMobile`, which makes `(pointer: coarse)` match). Use `page.touchscreen.tap` for taps; for drags and pinches, send `Input.dispatchTouchEvent` through a CDP session with one or two touch points. Taps convert with the same formula, since `OX`/`OY`/`B` follow the camera.
 - Take screenshots and look at them; most bugs here are visual.
 
 ## The full prompt
@@ -292,17 +302,21 @@ HINTS
 - A cute pink alarm clock stands on the ground at the bottom-right of the house: a gold
   wedge and a single hand sweep down to zero, with a small seconds number; it rings and
   wobbles when the hint arrives. Tapping it rings the hint early.
-- A little teddy bear peeks from behind the casa every 25–40 s (over the chimney, over
+- A cute floppy-eared puppy peeks from behind the casa every 25–40 s (over the chimney, over
   the roof ridge, around the tower, or around the far corner above the clock), stays about
   5 s, then ducks back. The first time, Oli whispers that someone is peeking. Tapping him
-  shows every gem still hidden this season, one every ~1.3 s, doing each gem's own action
+  gives a soft little woof, he pants happily, and he sniffs out every gem still hidden this season, one every ~1.3 s, doing each gem's own action
   where possible, so the season can finish.
 
 ENDING
-- After the last winter gem: "Happy Daughter's Day," and the name on a second line come
+- After the last winter gem: "Happy Birthday," and the name on a second line come
   out of the chimney letter by letter. Each letter puffs out with a little smoke, starts
   small and tilted, and floats up and over to its place in the line, in a script font
-  with a pink-to-orange gradient. Floating hearts follow, while Oli says "Every season she
+  with a pink-to-orange gradient. At the same time colorful balloons on thin strings
+  squeeze out of the chimney (small at first, growing as they come out), about one every
+  0.4 s for the first 7 s and then now and then, drifting out to either side of the words
+  and floating up and away with a gentle sway (`partyBalloons`, drawn behind the letters).
+  Floating hearts follow, while Oli says "Every season she
   grew a little more, just like our tree." It fades after ~22 s and the snowy garden stays
   calm. The finished message sits just below the title, clear of it.
 
@@ -321,8 +335,13 @@ SOUND (Web Audio, all generated, silent until the speaker is tapped)
 TOUCH
 - Works with fingers: taps snap to the nearest interactive thing within fingertip reach
   (including every seasonal object), bigger branch/balloon hit areas, no double-tap zoom,
-  no text selection, no stuck hover glows; in portrait show "turn your phone sideways for
-  a bigger garden". Keep interactive objects inside the phone crop.
+  no text selection, no stuck hover glows. Keep interactive objects inside the phone crop.
+- On phones the garden opens zoomed in to a finger-friendly size in either orientation:
+  drag on the garden to look around, pinch to zoom, and hints and the finale glide the
+  view to where to look. The finger never hides what it moves: the butterfly sits just
+  above the fingertip, the watering can pours just above it, and the twig, rake and chalk
+  ride above it too. Taps and put-downs still land under the finger. Carrying a tool to
+  the screen edge pans that way. Oli's bubble stays readable and on screen.
 
 KEYS: Esc drops the held tool, M toggles music, R starts the year over from spring.
 ```

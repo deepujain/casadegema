@@ -30,12 +30,11 @@
     #hint .t{font-size:24px}
     #hint .s{font-size:11px}
   }
+  @media (max-width:520px) and (min-height:501px){#hint{top:calc(58px + env(safe-area-inset-top))}}
   html,body{-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;overscroll-behavior:none}
-  #rotate{display:none;position:fixed;left:50%;bottom:22px;transform:translateX(-50%);pointer-events:none;
-    font:italic 14px Georgia,serif;color:#7a6250;white-space:nowrap}
-  #rotate b{display:inline-block;font-style:normal;animation:tilt 2.4s ease-in-out infinite}
-  @keyframes tilt{0%,30%{transform:rotate(0)}60%,100%{transform:rotate(90deg)}}
-  @media (orientation:portrait) and (pointer:coarse){#rotate{display:flex}}
+  #touchTip{display:none;position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));transform:translateX(-50%);
+    pointer-events:none;font:italic 14px Georgia,serif;color:#7a6250;white-space:nowrap;transition:opacity 1.2s}
+  @media (pointer:coarse){#touchTip{display:flex}}
   #nameInput{-webkit-user-select:text;user-select:text}
   @keyframes titleIn{from{opacity:0;transform:translate(-50%,-10px)}to{opacity:1;transform:translate(-50%,0)}}
   .panel{position:fixed;display:flex;gap:10px;align-items:center;padding:8px 12px;border-radius:999px;
@@ -48,7 +47,7 @@
     transition:transform .2s,border-color .2s}
   #swatches button:hover{transform:scale(1.15)}
   #swatches button.on{border-color:#6b4a3a;transform:scale(1.15)}
-  #found{left:18px;top:14px;transition:transform .4s,background .4s;gap:9px}
+  #found{left:calc(18px + env(safe-area-inset-left));top:calc(14px + env(safe-area-inset-top));transition:transform .4s,background .4s;gap:9px}
   #found .gems{display:flex;gap:7px;padding:0 2px}
   #found .gem{width:10px;height:10px;transform:rotate(45deg);border:1.5px solid #cdb9a8;border-radius:2px;
     background:rgba(255,255,255,.5);transition:background .4s,border-color .4s,box-shadow .4s,transform .4s}
@@ -69,7 +68,7 @@
 <canvas id="c"></canvas>
 <div id="hint"><div class="t">Casa de Gemas</div><div class="s">a little garden of hidden gems</div></div>
 <div id="found" class="panel"><span class="seasons"></span><span id="gemLabel">hidden gems</span><span class="gems"></span></div>
-<div id="rotate" class="panel"><b>📱</b>&nbsp; turn your phone sideways for a bigger garden</div>
+<div id="touchTip" class="panel">drag to look around · pinch to zoom</div>
 <input id="nameInput" maxlength="16" placeholder="her name" autocomplete="off" spellcheck="false">
 <div id="swatches" class="panel"><span>petals</span></div>
 <script>
@@ -81,6 +80,9 @@ const hint = document.getElementById('hint');
 
 let dpr = 1, B = 1, OX = 0, OY = 0;
 let bg, fg, carpet, cctx;
+// the painted layers live in their own frame (scale LB, offset LOX/LOY, size LW x LH device px) and are blitted with the
+// camera each frame. On desktop the frame is the screen itself; on phones it covers the whole garden so the camera can move freely.
+let LB = 1, LOX = 0, LOY = 0, LW = 1, LH = 1;
 
 function mulberry32(a) {
   return function () {
@@ -321,7 +323,7 @@ function lantern(g, x, y) {
 }
 
 function drawBg(g) {
-  const vx = -OX / B, vy = -OY / B, vw = cv.width / B, vh = cv.height / B;
+  const vx = -OX / B, vy = -OY / B, vw = g.canvas.width / B, vh = g.canvas.height / B;
   g.fillStyle = '#f7f0e4'; g.fillRect(vx, vy, vw, vh);
   for (let i = 0; i < 10; i++) blob(g, rr(vx, vx + vw), rr(vy, vy + vh), rr(80, 200), '#eee2cf', 6, .05);
 
@@ -665,8 +667,9 @@ const SNOW_COVER = .6;
 const snowOn = p => season === 3 && !p.spr && p.th < snowAcc * SNOW_COVER;
 
 function drawSprite(g, spr, x, y, rot, sx, sy) {
-  const c = Math.cos(rot), s = Math.sin(rot), kx = B * sx / 48, ky = B * sy / 48;
-  g.setTransform(c * kx, s * kx, -s * ky, c * ky, OX + B * x, OY + B * y);
+  const lay = g === cctx, b = lay ? LB : B, ox = lay ? LOX : OX, oy = lay ? LOY : OY;
+  const c = Math.cos(rot), s = Math.sin(rot), kx = b * sx / 48, ky = b * sy / 48;
+  g.setTransform(c * kx, s * kx, -s * ky, c * ky, ox + b * x, oy + b * y);
   g.drawImage(spr, -32, -32);
 }
 
@@ -954,7 +957,7 @@ function detach(p, x, y, vx, vy) {
 
 /* ---------------- render ---------------- */
 
-const MSG = "Happy Daughter's Day";
+const MSG = 'Happy Birthday';
 let girlName = (new URLSearchParams(location.search).get('name') || '').trim().slice(0, 16);
 const CHIMNEY = { x: 829, y: 230 };
 let msgA = 0, msgShown = false, msgT = 0, hearts = [], heartClock = 0;
@@ -991,14 +994,47 @@ function msgLetters() {
 }
 const chimPuffs = [];
 let msgLaunched = 0;
+// birthday balloons squeeze out of the chimney one after another and float away, drifting out to either side of the words
+const partyBalloons = [];
+const PARTY_COLS = ['#ff5d73', '#ffd54a', '#6ec6ff', '#b98cf5', '#7fd48a', '#ff9a52', '#f06b8b'];
+let partyClock = 0;
+function drawPartyBalloons(dt, e, spawn) {
+  partyClock += dt;
+  const gap = msgT < 7 ? .38 : 1.3;
+  if (spawn && msgT > .2 && partyClock > gap) {
+    partyClock = 0;
+    const side = Math.random() < .5 ? -1 : 1;
+    partyBalloons.push({ x: CHIMNEY.x + rand(-4, 4), y: CHIMNEY.y - 14, vx: side * rand(14, 46), vy: -rand(40, 58), r: rand(10, 14), life: 0,
+      ph: rand(0, TAU), c: PARTY_COLS[Math.random() * PARTY_COLS.length | 0] });
+  }
+  for (let i = partyBalloons.length - 1; i >= 0; i--) {
+    const b = partyBalloons[i];
+    b.life += dt;
+    if (b.life > 16) { partyBalloons.splice(i, 1); continue; }
+    const out = Math.min(1, b.life / .6), sway = Math.sin(time * 1.6 + b.ph);
+    b.x += (b.vx * out + sway * 8) * dt; b.y += b.vy * out * dt;
+    b.vx *= 1 - dt * .15;
+    const r = b.r * (.25 + .75 * out), rot = sway * .12 - b.vx * .004;
+    ctx.save(); ctx.globalAlpha = e * Math.min(1, b.life * 4);
+    ctx.strokeStyle = 'rgba(110,80,80,.45)'; ctx.lineWidth = .8;
+    ctx.beginPath(); ctx.moveTo(b.x, b.y + r * 1.2);
+    ctx.bezierCurveTo(b.x - sway * 6, b.y + r * 1.2 + 12, b.x + sway * 6, b.y + r * 1.2 + 22, b.x - sway * 3, b.y + r * 1.2 + 32 * out); ctx.stroke();
+    ctx.translate(b.x, b.y); ctx.rotate(rot);
+    const g = ctx.createRadialGradient(-r * .35, -r * .45, 1, 0, 0, r * 1.25);
+    g.addColorStop(0, 'rgba(255,255,255,.75)'); g.addColorStop(.25, b.c); g.addColorStop(1, b.c);
+    ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(0, 0, r, r * 1.18, 0, 0, TAU); ctx.fill();
+    ctx.fillStyle = b.c; ctx.beginPath(); ctx.moveTo(0, r * 1.12); ctx.lineTo(-r * .16, r * 1.32); ctx.lineTo(r * .16, r * 1.32); ctx.closePath(); ctx.fill();
+    ctx.restore();
+  }
+}
 function drawMessage(dt) {
   const earned = season === CHAPTERS.length - 1 && SURPRISES.every(s => s.done) && !gemFx.length && time - lastFound > 3;
   if (earned) msgT += dt;
   const ready = earned && msgT < MSG_FOR;
   msgA = clamp(msgA + (ready ? dt / .6 : -dt / 1.2), 0, 1);
-  if (ready && !msgShown) { Music.sparkle(true); if (msgT <= dt) say(CHAPTERS[season].outro, 9); }
+  if (ready && !msgShown) { Music.sparkle(true); camFocus(CHIMNEY.x, CHIMNEY.y - 60); if (msgT <= dt) say(CHAPTERS[season].outro, 9); }
   msgShown = ready;
-  if (msgA <= 0) { hearts.length = 0; chimPuffs.length = 0; return; }
+  if (msgA <= 0) { hearts.length = 0; chimPuffs.length = 0; partyBalloons.length = 0; return; }
   const e = msgA;
   const x = CHIMNEY.x, top = CHIMNEY.y - 12;
   ctx.setTransform(B, 0, 0, B, OX, OY);
@@ -1008,6 +1044,7 @@ function drawMessage(dt) {
     ctx.fillStyle = `rgba(255,255,255,${.22 * (1 - k) * e})`;
     ctx.beginPath(); ctx.arc(x + Math.sin(time * .8 + i * 2) * 8 * k, CHIMNEY.y - 6 - k * 50, 5 + k * 12, 0, TAU); ctx.fill();
   }
+  drawPartyBalloons(dt, e, ready);
 
   const letters = msgLetters();
   ctx.save();
@@ -1333,16 +1370,22 @@ function drawFireflies(dt) {
   ctx.restore();
 }
 
+function blit(layer) {
+  const k = B / LB;
+  ctx.setTransform(k, 0, 0, k, OX - LOX * k, OY - LOY * k);
+  ctx.drawImage(layer, 0, 0);
+}
 function render(dt) {
   ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.drawImage(bg, 0, 0);
+  if (cam.on) { ctx.fillStyle = '#f7f0e4'; ctx.fillRect(0, 0, cv.width, cv.height); }
+  blit(bg);
   drawOldLayer(bgOld);
-  ctx.drawImage(carpet, 0, 0);
+  blit(carpet);
   updateSeason(dt);
   ctx.setTransform(B, 0, 0, B, OX, OY);
   drawSeasonBack(dt);
   ctx.setTransform(B, 0, 0, B, OX, OY);
-  drawTeddy(dt);
+  drawPup(dt);
   drawLampGlass();
 
   let moving = 0, drops = 0;
@@ -1437,8 +1480,7 @@ function render(dt) {
     drawSprite(ctx, SPRITES.snow[p.si], p.x, p.y - 1, p.rot * .15, sz * (.45 + .45 * grow), sz * (.3 + .25 * grow));
   }
 
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.drawImage(fg, 0, 0);
+  blit(fg);
   drawOldLayer(fgOld);
 
   ctx.setTransform(B, 0, 0, B, OX, OY);
@@ -1506,6 +1548,7 @@ function render(dt) {
   drawGems(dt);
 
   drawFriends(dt);
+  drawRipples(dt);
   drawCursor(dt);
 }
 
@@ -1942,13 +1985,18 @@ let writing = false;
 function boardAt(x, y) { return x > EASEL.bx - 6 && x < EASEL.bx + EASEL.bw + 6 && y > EASEL.by - 6 && y < EASEL.by + EASEL.bh + 12; }
 function chalkAt(x, y) { return Math.abs(x - CHALK_HOME.x) < 10 && Math.abs(y - CHALK_HOME.y) < 9; }
 
-function openBoard() {
-  writing = true;
+function placeBoardInput() {
   const cx = EASEL.bx + EASEL.bw / 2, cy = EASEL.by + EASEL.bh / 2;
   nameInput.style.left = ((OX + B * cx) / dpr) + 'px';
   nameInput.style.top = ((OY + B * cy) / dpr) + 'px';
   nameInput.style.width = (B * (EASEL.bw - 14) / dpr) + 'px';
-  nameInput.style.fontSize = Math.round(B * 24 / dpr) + 'px';
+  nameInput.style.fontSize = Math.max(16, Math.round(B * 24 / dpr)) + 'px';
+}
+function openBoard() {
+  writing = true;
+  // lift the board into the top part of the view, clear of the phone keyboard
+  if (cam.on) cam.goal = { x: EASEL.bx + EASEL.bw / 2, y: EASEL.by + EASEL.bh / 2 + cv.height / B * .22 };
+  placeBoardInput();
   nameInput.value = girlName;
   nameInput.style.display = 'block';
   nameInput.focus();
@@ -2246,6 +2294,7 @@ function drawFeather(dt) {
     const needTwig = !start && next.id === 'balloon' && !twig.held;
     [tx0, ty0] = start && can.held ? [ROOT.x, ROOT.y - 4] : needCan ? [CAN_HOME.x - 6, CAN_HOME.y - 30]
       : needTwig ? [TWIG_HOME.x + 28, TWIG_HOME.y - 4] : next.at();
+    if (feather.focus !== hintUntil) { feather.focus = hintUntil; camFocus(tx0, ty0); }
     tx = tx0 + 20 + Math.sin(time * .9) * 8; ty = ty0 - 30 + Math.sin(time * 1.7) * 5; pull = 1.6;
   } else {
     tx = 600 + Math.sin(time * .11) * 430 + Math.sin(time * .29 + 2) * 80;
@@ -2312,7 +2361,8 @@ function drawCursor(dt) {
   const home = !mouse.inside && !perched && !grab;
   const BOW = { x: GIRL.x, y: GIRL.y - 72 };
   if (!bfly.init) { bfly.x = BOW.x; bfly.y = BOW.y; bfly.rest = 1; bfly.init = true; }
-  const tx = home ? BOW.x : mouse.x, ty = home ? BOW.y : mouse.y;
+  // on touch she perches just above the fingertip instead of hiding under it
+  const tx = home ? BOW.x : mouse.x, ty = home ? BOW.y : mouse.y - (touchMode && !perched ? 34 * dpr / B : 0);
   const px = bfly.x, py = bfly.y, f = Math.min(1, dt * (home ? 3.2 : bfly.rest > .05 ? 9 : 22));
   bfly.x += (tx - bfly.x) * f; bfly.y += (ty - bfly.y) * f;
   if (home && Math.hypot(bfly.x - BOW.x, bfly.y - BOW.y) < 1.5) { bfly.x = BOW.x; bfly.y = BOW.y; }
@@ -2383,24 +2433,98 @@ function drawOldLayer(layer) {
   if (trans.n === 1) { ctx.rect(vx, vy, vw, vh); ctx.arc(SUN.x, SUN.y, Math.max(0, (tt - .6) / 2.4 * 1100), 0, TAU); ctx.clip('evenodd'); }
   else if (trans.n === 2) { const x = 120 + (tt - .5) / 2.4 * 900; ctx.rect(Math.max(vx, x), vy, vw, vh); ctx.clip(); }
   else { const y = 120 + (tt - .6) / 2.2 * 780; ctx.rect(vx, Math.max(vy, y), vw, vh); ctx.clip(); }
-  ctx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.drawImage(layer, 0, 0);
+  blit(layer);
   ctx.restore();
 }
 function newLayer(fn, seed) {
-  const c = document.createElement('canvas'); c.width = cv.width; c.height = cv.height;
+  const c = document.createElement('canvas'); c.width = LW; c.height = LH;
   const g = c.getContext('2d');
-  if (fn) { g.setTransform(B, 0, 0, B, OX, OY); R = mulberry32(seed); fn(g); }
+  if (fn) {
+    const keep = [B, OX, OY];
+    B = LB; OX = LOX; OY = LOY;
+    g.setTransform(B, 0, 0, B, OX, OY); R = mulberry32(seed); fn(g);
+    [B, OX, OY] = keep;
+  }
   return c;
+}
+
+/* phones and tablets get a camera: the garden starts zoomed in to a finger-friendly size, one finger drags the view
+   around (on empty ground), two fingers pinch to zoom, and carrying a tool to the screen edge pans that way */
+const CROP = { x: 222, y: 70, w: 876, h: 880 };
+const LAYER = { x: 100, y: 0, w: 1100, h: 960 };
+const cam = { on: matchMedia('(pointer: coarse)').matches, x: 660, y: 560, z: 1, min: 1, max: 1, goal: null, moved: 0 };
+function camDefault(cw, ch) {
+  // portrait shows about 1000 garden units tall (a little over half the width, the rest a drag away),
+  // landscape about 600 tall
+  return clamp(ch > cw ? Math.max(cw / 620, ch / 1000) : ch / 600, cam.min, cam.max);
+}
+function applyCam() {
+  const cw = cv.width / dpr, ch = cv.height / dpr;
+  cam.z = clamp(cam.z, cam.min, cam.max);
+  const vw = cw / cam.z, vh = ch / cam.z;
+  // the view never wanders past the garden; when it is bigger than the garden it stays centered
+  cam.x = vw >= CROP.w ? CROP.x + CROP.w / 2 : clamp(cam.x, CROP.x + vw / 2, CROP.x + CROP.w - vw / 2);
+  cam.y = vh >= CROP.h ? CROP.y + CROP.h / 2 : clamp(cam.y, CROP.y + vh / 2, CROP.y + CROP.h - vh / 2);
+  const nb = cam.z * dpr, nox = cv.width / 2 - cam.x * nb, noy = cv.height / 2 - cam.y * nb;
+  if (nb === B && nox === OX && noy === OY) return;
+  B = nb; OX = nox; OY = noy; cam.moved = time;
+  placeSwatches();
+  if (writing) placeBoardInput();
+}
+// glide the view so (x, y) sits comfortably inside it (used for hints and the finale)
+function camFocus(x, y) {
+  if (!cam.on) return;
+  const vw = cv.width / B, vh = cv.height / B, vx = -OX / B, vy = -OY / B, mx = vw * .18, my = vh * .2;
+  if (x > vx + mx && x < vx + vw - mx && y > vy + my && y < vy + vh - my) return;
+  cam.goal = { x, y };
+}
+function inView(x, y, m = 0) {
+  const vx = -OX / B, vy = -OY / B;
+  return x > vx + m && x < vx + cv.width / B - m && y > vy + m && y < vy + cv.height / B - m;
+}
+function updateCam(dt) {
+  if (!cam.on) return;
+  if (cam.goal) {
+    const k = Math.min(1, dt * 3);
+    cam.x += (cam.goal.x - cam.x) * k; cam.y += (cam.goal.y - cam.y) * k;
+    if (Math.hypot(cam.goal.x - cam.x, cam.goal.y - cam.y) < 2) cam.goal = null;
+  }
+  // carrying a tool toward the edge of the screen slides the view along with it
+  if (touchMode && fingerDown && toolHeld() && !pinch) {
+    const cw = cv.width / dpr, ch = cv.height / dpr, ex = Math.min(70, cw * .14), ey = Math.min(70, ch * .14);
+    const ax = finger.cx < ex ? -(1 - finger.cx / ex) : finger.cx > cw - ex ? (finger.cx - (cw - ex)) / ex : 0;
+    const ay = finger.cy < ey ? -(1 - finger.cy / ey) : finger.cy > ch - ey ? (finger.cy - (ch - ey)) / ey : 0;
+    if (ax || ay) { cam.goal = null; cam.x += ax * 520 * dt / cam.z; cam.y += ay * 520 * dt / cam.z; }
+  }
+  const pb = B, pox = OX, poy = OY;
+  applyCam();
+  // a goal past the garden's edge is clamped away; stop chasing it once the view has settled
+  if (cam.goal && Math.abs(OX - pox) + Math.abs(OY - poy) < .05 * dpr) cam.goal = null;
+  if (fingerDown && (B !== pb || OX !== pox || OY !== poy)) pointAt(finger.cx, finger.cy);
 }
 function resize() {
   dpr = Math.min(2, window.devicePixelRatio || 1);
   const cw = innerWidth, ch = innerHeight;
   cv.width = cw * dpr | 0; cv.height = ch * dpr | 0;
-  // small screens crop the empty watercolor margins so the garden is as large as possible
-  const v = Math.min(cw, ch) < 620 ? { x: 222, y: 70, w: 876, h: 880 } : { x: 0, y: 0, w: W, h: H };
-  B = Math.min(cw / v.w, ch / v.h) * dpr;
-  OX = (cv.width - v.w * B) / 2 - v.x * B; OY = (cv.height - v.h * B) / 2 - v.y * B;
+  // phone browsers make 100vh taller than the visible page, which would stretch the garden
+  cv.style.width = cw + 'px'; cv.style.height = ch + 'px';
+  if (cam.on) {
+    cam.min = Math.min(cw / CROP.w, ch / CROP.h);
+    cam.max = Math.max(cam.min * 1.5, 1.5);
+    // the keyboard opening for the name board resizes the page; keep the zoom then
+    if (!writing) { cam.z = camDefault(cw, ch); cam.goal = null; }
+    B = 0; applyCam();
+    // the layers cover the whole garden at a fixed scale, so turning the phone does not have to repaint them
+    const lb = Math.min(cam.max * dpr, Math.sqrt(3.5e6 / (LAYER.w * LAYER.h)));
+    if (bg && lb === LB) return;
+    LB = lb; LOX = -LAYER.x * LB; LOY = -LAYER.y * LB; LW = LAYER.w * LB | 0; LH = LAYER.h * LB | 0;
+  } else {
+    // small screens crop the empty watercolor margins so the garden is as large as possible
+    const v = Math.min(cw, ch) < 620 ? CROP : { x: 0, y: 0, w: W, h: H };
+    B = Math.min(cw / v.w, ch / v.h) * dpr;
+    OX = (cv.width - v.w * B) / 2 - v.x * B; OY = (cv.height - v.h * B) / 2 - v.y * B;
+    LB = B; LOX = OX; LOY = OY; LW = cv.width; LH = cv.height;
+  }
   bg = newLayer(drawBg, 7); fg = newLayer(drawFg, 11); bgOld = fgOld = null;
   carpet = newLayer(null); cctx = carpet.getContext('2d');
   placeSwatches();
@@ -2408,8 +2532,26 @@ function resize() {
 let resizeTimer;
 addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(resize, 150); });
 
-function setMouse(e) {
-  const x = (e.clientX * dpr - OX) / B, y = (e.clientY * dpr - OY) / B;
+// on touch the finger would hide whatever it carries, so held tools ride a little above the fingertip;
+// `finger` is the spot actually under the finger, `mouse` the working point the game uses
+const finger = { x: -999, y: -999, cx: 0, cy: 0 };
+let fingerDown = false;
+const toolHeld = () => can.held || twig.held || chalk.held || rake.held;
+// where the held tool's grip goes relative to the finger, in garden units: the can so its tilted spout
+// (33 left, 43 below the grip) pours just above the fingertip, the others lifted clear of the finger
+function liftVec() {
+  if (!touchMode) return [0, 0];
+  const k = dpr / B;
+  if (can.held) return [33, -43 - 36 * k];
+  if (twig.held) return [0, -30 * k];
+  if (rake.held) return [0, -26 * k];
+  if (chalk.held) return [0, -40 * k];
+  return [0, 0];
+}
+function pointAt(cx, cy) {
+  finger.cx = cx; finger.cy = cy;
+  finger.x = (cx * dpr - OX) / B; finger.y = (cy * dpr - OY) / B;
+  const [lx, ly] = liftVec(), x = finger.x + lx, y = finger.y + ly;
   const now = performance.now(), dts = Math.max(.001, (now - mouse.t) / 1000);
   if (mouse.inside && dts < .1) {
     mouse.vx = mouse.vx * .5 + (x - mouse.x) / dts * .5;
@@ -2417,6 +2559,8 @@ function setMouse(e) {
   }
   mouse.x = x; mouse.y = y; mouse.t = now; mouse.inside = true;
 }
+function setMouse(e) { pointAt(e.clientX, e.clientY); }
+function relift() { const [lx, ly] = liftVec(); mouse.x = finger.x + lx; mouse.y = finger.y + ly; }
 /* ---------------- generative music ---------------- */
 
 const Music = (() => {
@@ -2575,6 +2719,19 @@ const Music = (() => {
       t += len + .04 + Math.random() * .08;
     }
   }
+  // a small, soft puppy "wuf-wuf": a quick downward sweep through a lowpass
+  function woof() {
+    if (!on) return;
+    const t0 = ac.currentTime + .02;
+    for (const [dt, f0] of [[0, 520], [.22, 560]]) {
+      const t = t0 + dt, o = ac.createOscillator(), lp = ac.createBiquadFilter(), gn = ac.createGain();
+      o.type = 'triangle';
+      o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f0 * .45, t + .12);
+      lp.type = 'lowpass'; lp.frequency.value = 1400;
+      gn.gain.setValueAtTime(0, t); gn.gain.linearRampToValueAtTime(.08, t + .012); gn.gain.exponentialRampToValueAtTime(.0005, t + .14);
+      o.connect(lp); lp.connect(gn); gn.connect(bus); o.start(t); o.stop(t + .16);
+    }
+  }
   function pad(chord, t, dur) {
     const f = ac.createBiquadFilter(); f.type = 'lowpass'; f.Q.value = .3;
     f.frequency.setValueAtTime(650, t); f.frequency.linearRampToValueAtTime(1100, t + dur / 2); f.frequency.linearRampToValueAtTime(650, t + dur + 3);
@@ -2650,7 +2807,7 @@ const Music = (() => {
     ac.resume();
     const b = ac.createBufferSource(); b.buffer = ac.createBuffer(1, 1, 22050); b.connect(ac.destination); b.start();
   }
-  return { start, stop, unlock, toggle: () => (on ? stop() : start()), sparkle, shake, lamp, hoot, chirp, pour, pop, rake, get on() { return on; }, get used() { return !!ac; } };
+  return { start, stop, unlock, toggle: () => (on ? stop() : start()), sparkle, shake, lamp, hoot, chirp, woof, pour, pop, rake, get on() { return on; }, get used() { return !!ac; } };
 })();
 
 /* ---------------- seasons ---------------- */
@@ -2719,7 +2876,7 @@ function owlHint() {
   const next = SURPRISES.find(s => !s.done);
   if (!mainTree) say('Pick up the watering can and give the tree bed a drink!', 5);
   else if (next) { say(typeof next.tip === 'function' ? next.tip() : next.tip, 5.5); ringClock(); }
-  else say(season < CHAPTERS.length - 1 ? 'All found! Hold on to your feathers...' : "Hoo-hoo! Happy Daughter's Day!", 4);
+  else say(season < CHAPTERS.length - 1 ? 'All found! Hold on to your feathers...' : 'Hoo-hoo! Happy Birthday!', 4);
 }
 function wrapText(text, maxW) {
   const out = []; let line = '';
@@ -2738,24 +2895,26 @@ function drawTalk(dt) {
   const a = Math.min(1, talk.t * 5) * clamp((dur - talk.t) / .45, 0, 1);
   ctx.setTransform(B, 0, 0, B, OX, OY);
   ctx.save();
-  ctx.font = 'italic 15px Georgia, serif';
-  const lines = wrapText(text, 200), lh = 19, pad = 11;
-  const w = Math.max(...lines.map(l => ctx.measureText(l).width)) + pad * 2, h = lines.length * lh + pad * 2 - 5;
-  const vl = -OX / B + 8, vr = (cv.width - OX) / B - 8, top = (58 * dpr - OY) / B;
+  // zoomed out on a phone the words would be tiny, so the bubble keeps at least 13px text on screen
+  const s = cam.on ? Math.max(1, 13 * dpr / B / 15) : 1;
+  const vl = -OX / B + 8, vr = (cv.width - OX) / B - 8, top = (58 * dpr - OY) / B, bot = (cv.height - OY) / B - 8;
+  ctx.font = `italic ${15 * s}px Georgia, serif`;
+  const lh = 19 * s, pad = 11 * s, lines = wrapText(text, Math.min(200 * s, vr - vl - pad * 2));
+  const w = Math.max(...lines.map(l => ctx.measureText(l).width)) + pad * 2, h = lines.length * lh + pad * 2 - 5 * s;
   let bx = owl.x - 30 - w, by = owl.y - 52 - h / 2, right = false;
   if (bx < vl) { bx = owl.x + 26; by = owl.y + 6; right = true; }
-  bx = clamp(bx, vl, vr - w); by = Math.max(by, top);
-  const k = .85 + .15 * Math.min(1, talk.t * 6);
+  bx = clamp(bx, vl, vr - w); by = clamp(by, top, bot - h);
+  const k = .85 + .15 * Math.min(1, talk.t * 6), tail = !cam.on || inView(owl.x, owl.y);
   const ax = right ? bx + 16 : bx + w - 10, ay = right ? by : by + h * .6, tx = owl.x + (right ? 6 : -12), ty = owl.y - (right ? 28 : 38);
   ctx.globalAlpha = a;
   ctx.translate(ax, ay); ctx.scale(k, k); ctx.translate(-ax, -ay);
   ctx.shadowColor = 'rgba(120,80,60,.18)'; ctx.shadowBlur = 10 * B; ctx.shadowOffsetY = 3 * B;
   ctx.fillStyle = 'rgba(255,250,242,.95)';
-  ctx.beginPath(); ctx.roundRect(bx, by, w, h, 14); ctx.fill();
-  ctx.beginPath(); ctx.moveTo(ax - 7, ay - (right ? -2 : 6)); ctx.lineTo(tx, ty); ctx.lineTo(ax + 7, ay + (right ? 2 : 6)); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.roundRect(bx, by, w, h, 14 * s); ctx.fill();
+  if (tail) { ctx.beginPath(); ctx.moveTo(ax - 7, ay - (right ? -2 : 6)); ctx.lineTo(tx, ty); ctx.lineTo(ax + 7, ay + (right ? 2 : 6)); ctx.closePath(); ctx.fill(); }
   ctx.shadowColor = 'transparent';
-  ctx.strokeStyle = 'rgba(160,120,95,.35)'; ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.roundRect(bx, by, w, h, 14); ctx.stroke();
+  ctx.strokeStyle = 'rgba(160,120,95,.35)'; ctx.lineWidth = s;
+  ctx.beginPath(); ctx.roundRect(bx, by, w, h, 14 * s); ctx.stroke();
   ctx.fillStyle = '#6b4a3a'; ctx.textBaseline = 'top';
   lines.forEach((l, i) => ctx.fillText(l, bx + pad, by + pad + i * lh - 1));
   ctx.restore();
@@ -2783,7 +2942,7 @@ function setSeason(n, quiet) {
     }
   }
   hideNook();
-  teddy.help = null; teddy.until = 0; teddy.next = time + rand(25, 40);
+  pup.help = null; pup.until = 0; pup.next = time + rand(25, 40);
   if (n >= 1 && !sister.t0) sister.t0 = time + 1.5;
   if (n === 1) placeKite();
   if (n === 2) { kite.state = 'gone'; spawnLitter(); }
@@ -3418,7 +3577,7 @@ function sweep(dx, dy, dt) {
     toPile(l);
   }
   // the tines scratch the settled petals off the stones too
-  cctx.save(); cctx.setTransform(B, 0, 0, B, OX, OY);
+  cctx.save(); cctx.setTransform(LB, 0, 0, LB, LOX, LOY);
   cctx.globalCompositeOperation = 'destination-out'; cctx.fillStyle = 'rgba(0,0,0,.5)';
   cctx.beginPath(); cctx.ellipse(hx, hy, 20, 9, 0, 0, TAU); cctx.fill();
   cctx.restore();
@@ -3433,7 +3592,7 @@ function sweep(dx, dy, dt) {
 let floorClean = 0;
 function cleanFloor() {
   if (!floorClean || time - floorClean > 4) return;
-  cctx.save(); cctx.setTransform(B, 0, 0, B, OX, OY);
+  cctx.save(); cctx.setTransform(LB, 0, 0, LB, LOX, LOY);
   cctx.globalCompositeOperation = 'destination-out'; cctx.fillStyle = 'rgba(0,0,0,.12)';
   cctx.beginPath(); cctx.moveTo(FLOOR.x0, 870); cctx.lineTo(FLOOR.x1, 870); cctx.lineTo(FLOOR.x1 + 40, 952); cctx.lineTo(FLOOR.x0 - 40, 952); cctx.fill();
   cctx.restore();
@@ -3756,6 +3915,13 @@ function nookAt(x, y) {
   if (SLV[season] < .5) return -1;
   return WALL_POTS.findIndex(([px, py]) => Math.abs(x - px) < 12 && y > py - 14 && y < py + 15);
 }
+// a fingertip is far wider than a pot, so touch taps take the nearest pot within reach
+function nookNear(x, y) {
+  if (SLV[season] < .5) return -1;
+  let best = -1, bd = Math.max(26, 20 * dpr / B);
+  WALL_POTS.forEach(([px, py], j) => { const d = Math.hypot(x - px, y - py); if (d < bd) { bd = d; best = j; } });
+  return best;
+}
 // the visitor only comes out for that season's action: water (spring), a resting butterfly (summer),
 // a wiggle (autumn), the twig knocking the snow off (winter)
 function stirNook(i, watered) {
@@ -3949,33 +4115,33 @@ function drawNook(dt) {
   ctx.restore();
 }
 
-/* a teddy bear peeks out from behind the casa now and then; tap him and he shows you every gem still hidden this season */
-const TEDDY_SPOTS = [
+/* a puppy peeks out from behind the casa now and then; tap him and he sniffs out every gem still hidden this season */
+const PUP_SPOTS = [
   { x: 829, y: 238, dir: 'up' },
   { x: 640, y: 303, dir: 'up' },
   { x: 285, y: 450, dir: 'left' },
   { x: 905, y: 802, dir: 'right' },
 ];
-const TEDDY_R = 17;
-const teddy = { spot: null, t0: 0, until: 0, next: 35, p: 0, help: null, told: false, hop: 0 };
-function teddyHead() {
-  const s = teddy.spot, out = TEDDY_R * 1.25 * teddy.p;
-  if (s.dir === 'up') return [s.x, s.y + TEDDY_R * .9 - out * 1.2, 0];
+const PUP_R = 17;
+const pup = { spot: null, t0: 0, until: 0, next: 35, p: 0, help: null, told: false, hop: 0 };
+function pupHead() {
+  const s = pup.spot, out = PUP_R * 1.25 * pup.p;
+  if (s.dir === 'up') return [s.x, s.y + PUP_R * .9 - out * 1.2, 0];
   const d = s.dir === 'left' ? -1 : 1;
-  return [s.x + d * (out - TEDDY_R * .7), s.y, d * .5];
+  return [s.x + d * (out - PUP_R * .7), s.y, d * .5];
 }
-function teddyAt(x, y) {
-  if (!teddy.spot || teddy.p < .5 || teddy.help) return false;
-  const [hx, hy] = teddyHead();
-  return Math.hypot(x - hx, y - hy) < TEDDY_R * 1.6;
+function pupAt(x, y) {
+  if (!pup.spot || pup.p < .5 || pup.help) return false;
+  const [hx, hy] = pupHead();
+  return Math.hypot(x - hx, y - hy) < PUP_R * 1.6;
 }
-function tapTeddy() {
-  teddy.help = { next: time + .9, tried: new Set() }; teddy.until = Infinity; teddy.hop = time;
-  Music.sparkle(true);
-  say('Teddy knows every hiding spot! Watch...', 3.5);
+function tapPup() {
+  pup.help = { next: time + .9, tried: new Set() }; pup.until = Infinity; pup.hop = time;
+  Music.woof(); Music.sparkle(true);
+  say('Woof! The puppy can sniff out every hiding spot. Watch...', 3.5);
 }
-// Teddy does each gem's own action where he can, so the scene changes just as if she had found it
-function teddyShow(s) {
+// the puppy does each gem's own action where he can, so the scene changes just as if she had found it
+function pupShow(s) {
   const id = s.id;
   if (NOOKS[season].id === id) stirNook(nook.pot, true);
   else if (id === 'kite' && kite.state === 'stuck') { kite.from = kitePos(); kite.state = 'rise'; kite.t = 0; }
@@ -3991,33 +4157,34 @@ function teddyShow(s) {
   else if (id === 'lights' && !lights.on) stringLights();
   else found(id);
 }
-function updateTeddy(dt) {
+function updatePup(dt) {
   const left = SURPRISES.filter(s => !s.done);
-  if (teddy.help) {
-    const h = teddy.help;
+  if (pup.help) {
+    const h = pup.help;
     if (time >= h.next) {
       const s = left.find(s => !h.tried.has(s.id));
-      if (s) { h.tried.add(s.id); teddyShow(s); h.next = time + 1.3; }
-      else if (!left.length || time - h.next > 6) { teddy.help = null; teddy.until = time + 1.5; }
+      if (s) { h.tried.add(s.id); pupShow(s); h.next = time + 1.3; }
+      else if (!left.length || time - h.next > 6) { pup.help = null; pup.until = time + 1.5; }
     }
-  } else if (!teddy.spot) {
-    if (mainTree && left.length && !seasonGo && time > teddy.next) {
-      const opts = TEDDY_SPOTS.filter(s => s !== teddy.last);
-      teddy.spot = teddy.last = opts[Math.floor(Math.random() * opts.length)];
-      teddy.t0 = time; teddy.until = time + 5;
-      if (!teddy.told && !talk.cur) { teddy.told = true; say('Psst... someone is peeking out from behind the casa!', 4); }
+  } else if (!pup.spot) {
+    if (mainTree && left.length && !seasonGo && time > pup.next) {
+      let opts = PUP_SPOTS.filter(s => s !== pup.last);
+      if (cam.on) { const seen = opts.filter(s => inView(s.x, s.y, 30)); if (seen.length) opts = seen; }
+      pup.spot = pup.last = opts[Math.floor(Math.random() * opts.length)];
+      pup.t0 = time; pup.until = time + 5;
+      if (!pup.told && !talk.cur) { pup.told = true; say('Psst... someone is peeking out from behind the casa!', 4); }
     }
   }
-  const want = teddy.spot && time < teddy.until ? 1 : 0;
-  teddy.p += (want - teddy.p) * Math.min(1, dt * (want ? 3 : 4));
-  if (teddy.spot && !want && teddy.p < .02) { teddy.spot = null; teddy.p = 0; teddy.next = time + rand(25, 40); }
+  const want = pup.spot && time < pup.until ? 1 : 0;
+  pup.p += (want - pup.p) * Math.min(1, dt * (want ? 3 : 4));
+  if (pup.spot && !want && pup.p < .02) { pup.spot = null; pup.p = 0; pup.next = time + rand(25, 40); }
 }
-function drawTeddy(dt) {
-  updateTeddy(dt);
-  if (!teddy.spot || teddy.p < .01) return;
-  const s = teddy.spot, R = TEDDY_R, hop = teddy.hop ? Math.max(0, Math.sin((time - teddy.hop) * 9)) * 5 * Math.max(0, 1 - (time - teddy.hop) / 1.2) : 0;
-  const [hx, hy0, rot] = teddyHead(), hy = hy0 - hop;
-  const fur = '#b07a4f', light = '#e8c9a4', dark = '#5a3a26';
+function drawPup(dt) {
+  updatePup(dt);
+  if (!pup.spot || pup.p < .01) return;
+  const s = pup.spot, R = PUP_R, hop = pup.hop ? Math.max(0, Math.sin((time - pup.hop) * 9)) * 5 * Math.max(0, 1 - (time - pup.hop) / 1.2) : 0;
+  const [hx, hy0, rot] = pupHead(), hy = hy0 - hop;
+  const fur = '#e2b675', light = '#fbf1e2', dark = '#3a2a22', earC = '#8a5a34';
   ctx.save();
   ctx.beginPath();
   if (s.dir === 'up') ctx.rect(s.x - 80, s.y - 120, 160, 120);
@@ -4025,27 +4192,53 @@ function drawTeddy(dt) {
   else ctx.rect(s.x, s.y - 80, 120, 160);
   ctx.clip();
   ctx.translate(hx, hy); ctx.rotate(rot);
-  if (teddyAt(mouse.x, mouse.y) && hover === 'teddy') { ctx.shadowColor = 'rgba(255,255,255,.95)'; ctx.shadowBlur = 12 * B; }
-  ctx.fillStyle = fur;
-  for (const ex of [-.72, .72]) { ctx.beginPath(); ctx.arc(ex * R, -.72 * R, R * .38, 0, TAU); ctx.fill(); }
-  ctx.beginPath(); ctx.arc(0, 0, R, 0, TAU); ctx.fill();
-  ctx.shadowBlur = 0;
-  ctx.fillStyle = '#e9a6a0';
-  for (const ex of [-.72, .72]) { ctx.beginPath(); ctx.arc(ex * R, -.72 * R, R * .2, 0, TAU); ctx.fill(); }
-  ctx.fillStyle = light; ctx.beginPath(); ctx.ellipse(0, R * .35, R * .45, R * .34, 0, 0, TAU); ctx.fill();
-  const blink = (time % 3.7) < .12 || teddy.help;
-  ctx.fillStyle = dark; ctx.strokeStyle = dark; ctx.lineWidth = 1.4; ctx.lineCap = 'round';
-  for (const ex of [-.36, .36]) {
-    if (blink) { ctx.beginPath(); ctx.arc(ex * R, -.08 * R, R * .1, Math.PI * 1.1, Math.PI * 1.9); ctx.stroke(); }
-    else { ctx.beginPath(); ctx.arc(ex * R, -.08 * R, R * .09, 0, TAU); ctx.fill(); }
+  // ears perk up and out above the head with soft folded tips, and flick as he pops up
+  const flick = Math.max(0, 1 - (time - pup.t0) / .6) * Math.sin((time - pup.t0) * 18) * .3;
+  for (const sd of [-1, 1]) {
+    const sw = Math.sin(time * 3 + sd) * .06 + flick + (pup.help ? Math.sin(time * 12) * .14 : 0);
+    ctx.save(); ctx.translate(sd * R * .58, -R * .5); ctx.rotate(sd * (.55 + sw)); ctx.scale(sd, 1);
+    ctx.fillStyle = earC; ctx.beginPath();
+    ctx.moveTo(-R * .36, R * .1); ctx.quadraticCurveTo(-R * .42, -R * .7, -R * .02, -R * 1.02);
+    ctx.quadraticCurveTo(R * .3, -R * .82, R * .36, R * .1); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = 'rgba(255,215,190,.35)'; ctx.beginPath();
+    ctx.ellipse(-R * .02, -R * .42, R * .13, R * .3, -.08, 0, TAU); ctx.fill();
+    // the tip folds over outward
+    ctx.fillStyle = '#6f4527'; ctx.beginPath();
+    ctx.moveTo(-R * .1, -R * .92); ctx.quadraticCurveTo(R * .3, -R * .9, R * .44, -R * .56);
+    ctx.quadraticCurveTo(R * .2, -R * .62, R * .14, -R * .74); ctx.closePath(); ctx.fill();
+    ctx.restore();
   }
-  ctx.beginPath(); ctx.ellipse(0, R * .22, R * .13, R * .09, 0, 0, TAU); ctx.fill();
-  ctx.beginPath(); ctx.moveTo(0, R * .3); ctx.lineTo(0, R * .42); ctx.arc(-R * .1, R * .42, R * .1, 0, Math.PI * .8); ctx.moveTo(0, R * .42); ctx.arc(R * .1, R * .42, R * .1, Math.PI, Math.PI * .2, true); ctx.stroke();
-  ctx.fillStyle = 'rgba(240,120,120,.3)';
-  for (const ex of [-.62, .62]) { ctx.beginPath(); ctx.ellipse(ex * R, R * .2, R * .14, R * .09, 0, 0, TAU); ctx.fill(); }
+  if (pupAt(mouse.x, mouse.y) && hover === 'pup') { ctx.shadowColor = 'rgba(255,255,255,.95)'; ctx.shadowBlur = 12 * B; }
+  ctx.fillStyle = fur;
+  ctx.beginPath(); ctx.ellipse(0, 0, R * 1.02, R * .94, 0, 0, TAU); ctx.fill();
+  ctx.shadowBlur = 0;
+  // brown patch over one eye, then a soft white muzzle
+  ctx.fillStyle = earC; ctx.globalAlpha = .55;
+  ctx.beginPath(); ctx.ellipse(R * .4, -R * .14, R * .3, R * .26, .3, 0, TAU); ctx.fill();
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = light; ctx.beginPath(); ctx.ellipse(0, R * .4, R * .52, R * .4, 0, 0, TAU); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(0, -R * .2, R * .1, R * .34, 0, 0, TAU); ctx.fill();
+  const blink = (time % 3.7) < .12;
+  ctx.fillStyle = dark; ctx.strokeStyle = dark; ctx.lineWidth = 1.4; ctx.lineCap = 'round';
+  for (const ex of [-.38, .38]) {
+    if (blink) { ctx.beginPath(); ctx.arc(ex * R, -.12 * R, R * .11, Math.PI * 1.1, Math.PI * 1.9); ctx.stroke(); }
+    else {
+      ctx.beginPath(); ctx.arc(ex * R, -.12 * R, R * .12, 0, TAU); ctx.fill();
+      ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(ex * R + R * .04, -.16 * R, R * .04, 0, TAU); ctx.fill(); ctx.fillStyle = dark;
+    }
+  }
+  ctx.beginPath(); ctx.ellipse(0, R * .2, R * .17, R * .12, 0, 0, TAU); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,.6)'; ctx.beginPath(); ctx.ellipse(-R * .05, R * .16, R * .06, R * .03, 0, 0, TAU); ctx.fill();
+  const pant = pup.help || pup.hop && time - pup.hop < 1.2;
+  if (pant) {
+    ctx.fillStyle = '#ef7d8a';
+    ctx.beginPath(); ctx.ellipse(0, R * .56 + Math.sin(time * 10) * R * .03, R * .1, R * .16, 0, 0, TAU); ctx.fill();
+  }
+  ctx.strokeStyle = dark; ctx.lineWidth = 1.2;
+  ctx.beginPath(); ctx.moveTo(0, R * .3); ctx.lineTo(0, R * .42); ctx.arc(-R * .12, R * .42, R * .12, 0, Math.PI * .8); ctx.moveTo(0, R * .42); ctx.arc(R * .12, R * .42, R * .12, Math.PI, Math.PI * .2, true); ctx.stroke();
   ctx.restore();
   // paws curl over the edge he is hiding behind
-  const pk = clamp((teddy.p - .4) / .6, 0, 1);
+  const pk = clamp((pup.p - .4) / .6, 0, 1);
   if (pk > 0) {
     ctx.save(); ctx.globalAlpha = pk; ctx.fillStyle = fur;
     const paws = s.dir === 'up' ? [[hx - R * .75, s.y + 1], [hx + R * .75, s.y + 1]] : [[s.x + (s.dir === 'left' ? 1 : -1), hy + R * 1.05]];
@@ -4058,13 +4251,13 @@ function drawTeddy(dt) {
 }
 
 function seasonHover(x, y) {
-  if (teddyAt(x, y)) return 'teddy';
+  if (pupAt(x, y)) return 'pup';
   if (nookAt(x, y) >= 0) return 'nook';
   return (jarAt(x, y) && 'jar') || (cloudAt(x, y) && 'cloud') || (umbAt(x, y) && 'umbrella') || (moundAt(x, y) && 'mound')
     || (snowmanAt(x, y) && 'snowman') || (chimneyAt(x, y) && 'chimney') || (railAt(x, y) && 'rail') || null;
 }
 function seasonTap(x, y) {
-  if (teddyAt(x, y)) { tapTeddy(); return true; }
+  if (pupAt(x, y)) { tapPup(); return true; }
   const n = nookAt(x, y);
   if (n >= 0) { if (season === 2) nook.grab = { i: n, travel: 0, puffed: 0 }; else puffNook(n, 3); return true; }
   if (jarAt(x, y)) { openJar(); return true; }
@@ -4078,7 +4271,7 @@ function seasonTap(x, y) {
 }
 function seasonAnchors() {
   const a = WALL_POTS.map(([x, y]) => [x, y + 2]);
-  if (teddy.spot && teddy.p > .5 && !teddy.help) a.push(teddyHead());
+  if (pup.spot && pup.p > .5 && !pup.help) a.push(pupHead());
   if (season === 1 && !jarOpen) a.push([JAR.x, JAR.y - 3]);
   if (season === 2) { a.push([RAKE_HOME.x + 40, RAKE_HOME.y - 2], [CLOUD.x, CLOUD.y]); if (!umbrella.open) a.push([UMB.x - 6, UMB.y - 40]); }
   if (season === 3) {
@@ -4181,14 +4374,60 @@ function touchAnchors() {
 }
 function snapTouch() {
   let best = null, bd = 30 * dpr / B;
-  for (const [x, y] of touchAnchors()) { const d = Math.hypot(x - mouse.x, y - mouse.y); if (d < bd) { bd = d; best = [x, y]; } }
+  for (const [x, y] of touchAnchors()) { const d = Math.hypot(x - finger.x, y - finger.y); if (d < bd) { bd = d; best = [x, y]; } }
   if (!best) return;
-  if (!can.held && !twig.held && !chalk.held && !rake.held) { const h = pick(); if (h && h.d < bd) return; }
-  mouse.x = best[0]; mouse.y = best[1];
+  if (!toolHeld()) { const h = pick(); if (h && h.d < bd) return; }
+  finger.x = best[0]; finger.y = best[1]; relift();
+}
+
+// a soft ring where a finger lands, so a tap always shows where it went
+const ripples = [];
+function drawRipples(dt) {
+  if (!ripples.length) return;
+  ctx.setTransform(B, 0, 0, B, OX, OY);
+  for (let i = ripples.length - 1; i >= 0; i--) {
+    const r = ripples[i]; r.t += dt;
+    if (r.t > .5) { ripples.splice(i, 1); continue; }
+    const k = r.t / .5;
+    ctx.strokeStyle = `rgba(255,248,230,${.7 * (1 - k)})`; ctx.lineWidth = 2 * dpr / B;
+    ctx.beginPath(); ctx.arc(r.x, r.y, (6 + 16 * k) * dpr / B, 0, TAU); ctx.stroke();
+  }
+}
+
+// two fingers pinch and pan the view; one finger on empty ground drags it
+const touches = new Map();
+let pinch = null, pan = null, panCand = null, afterPinch = false;
+function pinchMid() {
+  const [a, b] = [...touches.values()];
+  return [(a.x + b.x) / 2, (a.y + b.y) / 2, Math.hypot(a.x - b.x, a.y - b.y) || 1];
+}
+function startPinch() {
+  const [mx, my, d] = pinchMid(), cw = cv.width / dpr, ch = cv.height / dpr;
+  pinch = { d0: d, z0: cam.z, wx: cam.x + (mx - cw / 2) / cam.z, wy: cam.y + (my - ch / 2) / cam.z };
+  cam.goal = null; pan = panCand = null; release(); fingerDown = false;
+}
+function movePinch() {
+  const [mx, my, d] = pinchMid(), cw = cv.width / dpr, ch = cv.height / dpr;
+  cam.z = clamp(pinch.z0 * d / pinch.d0, cam.min, cam.max);
+  cam.x = pinch.wx - (mx - cw / 2) / cam.z; cam.y = pinch.wy - (my - ch / 2) / cam.z;
+  applyCam();
 }
 
 let grabTravel = 0;
 cv.addEventListener('pointermove', e => {
+  if (touches.has(e.pointerId)) touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (pinch) { if (touches.size >= 2) movePinch(); return; }
+  if (afterPinch) return;
+  // a finger that slides more than a little without holding a branch, pot or tool drags the view
+  if (!pan && panCand && e.pointerId === panCand.id && !grab && !nook.grab && !toolHeld() && !writing
+      && Math.hypot(e.clientX - panCand.sx, e.clientY - panCand.sy) > 10)
+    pan = { id: e.pointerId, sx: e.clientX, sy: e.clientY, cx: cam.x, cy: cam.y };
+  if (pan && e.pointerId === pan.id) {
+    cam.goal = null;
+    cam.x = pan.cx - (e.clientX - pan.sx) / cam.z; cam.y = pan.cy - (e.clientY - pan.sy) / cam.z;
+    applyCam(); setMouse(e);
+    return;
+  }
   const px = mouse.x, py = mouse.y;
   setMouse(e);
   if (grab) { grabTravel += Math.hypot(mouse.x - px, mouse.y - py); if (grabTravel > 350) found('shake'); }
@@ -4202,28 +4441,36 @@ cv.addEventListener('pointermove', e => {
 });
 cv.addEventListener('pointerdown', e => {
   touchMode = e.pointerType !== 'mouse';
+  if (touchMode) {
+    touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (touches.size > 1) { if (cam.on && touches.size === 2) { startPinch(); afterPinch = true; } return; }
+    fingerDown = true;
+    panCand = cam.on && !toolHeld() ? { id: e.pointerId, sx: e.clientX, sy: e.clientY } : null;
+  }
   setMouse(e); lastAct = time;
   if (writing) { e.preventDefault(); nameInput.blur(); return; }
-  if (touchMode) snapTouch();
+  if (touchMode) { snapTouch(); ripples.push({ x: finger.x, y: finger.y, t: 0 }); }
+  // tools are put down by tapping their home, which is under the finger rather than under the lifted tool
+  const fx = finger.x, fy = finger.y;
   if (chalk.held) {
-    if (chalkAt(mouse.x, mouse.y)) chalk.held = false;
-    else if (boardAt(mouse.x, mouse.y)) { e.preventDefault(); openBoard(); }
+    if (chalkAt(fx, fy)) chalk.held = false;
+    else if (boardAt(fx, fy) || boardAt(mouse.x, mouse.y)) { e.preventDefault(); openBoard(); }
     return;
   }
-  if (rake.held) { if (rakeAt(mouse.x, mouse.y)) rake.held = false; return; }
-  if (!can.held && !twig.held && chalkAt(mouse.x, mouse.y)) { chalk.held = true; return; }
+  if (rake.held) { if (rakeAt(fx, fy)) rake.held = false; relift(); return; }
+  if (!can.held && !twig.held && chalkAt(fx, fy)) { chalk.held = true; relift(); return; }
   if (twig.held) {
-    if (twigAt(mouse.x, mouse.y) || canAt(mouse.x, mouse.y)) twig.held = false;
-    else if (season === 3) { const [i] = twigNook(); if (i >= 0) stirNook(i); }
-    return;
+    if (twigAt(fx, fy) || canAt(fx, fy)) twig.held = false;
+    else if (season === 3) { let i = touchMode ? nookNear(fx, fy) : -1; if (i < 0) [i] = twigNook(); if (i >= 0) stirNook(i); }
+    relift(); return;
   }
-  if (!can.held && twigAt(mouse.x, mouse.y)) { twig.held = true; return; }
+  if (!can.held && twigAt(fx, fy)) { twig.held = true; relift(); return; }
   if (can.held) {
-    if (canAt(mouse.x, mouse.y)) { can.held = false; return; }
+    if (canAt(fx, fy)) { can.held = false; relift(); return; }
     can.pouring = true; cv.setPointerCapture(e.pointerId); return;
   }
-  if (canAt(mouse.x, mouse.y)) { can.held = true; can.lastPour = time; return; }
-  if (rakeAt(mouse.x, mouse.y)) { rake.held = true; return; }
+  if (canAt(fx, fy)) { can.held = true; can.lastPour = time; relift(); return; }
+  if (rakeAt(fx, fy)) { rake.held = true; relift(); return; }
   if (owlAt(mouse.x, mouse.y)) { owlHint(); return; }
   if (seasonTap(mouse.x, mouse.y)) return;
   if (clockAt(mouse.x, mouse.y)) { ringClock(); return; }
@@ -4235,11 +4482,20 @@ cv.addEventListener('pointerdown', e => {
   if (pot) { clickPot(pot); return; }
   const h = pick(); if (h) { grab = h; grabTravel = 0; cv.setPointerCapture(e.pointerId); }
 });
-const release = () => { if (grab) Music.sparkle(false); grab = null; can.pouring = false; nook.grab = null; };
-cv.addEventListener('pointerup', e => { release(); Music.unlock(); });
+function release() { if (grab) Music.sparkle(false); grab = null; can.pouring = false; nook.grab = null; }
+function liftFinger(e) {
+  touches.delete(e.pointerId);
+  if (pan && pan.id === e.pointerId) pan = null;
+  if (panCand && panCand.id === e.pointerId) panCand = null;
+  if (touches.size < 2) pinch = null;
+  if (!touches.size) { afterPinch = false; fingerDown = false; }
+}
+cv.addEventListener('pointerup', e => { liftFinger(e); release(); Music.unlock(); });
 addEventListener('touchend', () => Music.unlock(), { passive: true });
-cv.addEventListener('pointercancel', release);
-cv.addEventListener('pointerleave', () => { if (!grab) { mouse.inside = false; hover = null; } });
+cv.addEventListener('pointercancel', e => { liftFinger(e); release(); });
+cv.addEventListener('pointerleave', e => { if (e.pointerType !== 'mouse') liftFinger(e); if (!grab) { mouse.inside = false; hover = null; } });
+// iOS Safari would otherwise zoom the whole page on a pinch
+addEventListener('gesturestart', e => e.preventDefault());
 addEventListener('keydown', e => {
   if (writing) return;
   if (e.key === 'r' || e.key === 'R') location.href = location.pathname + (girlName ? '?name=' + encodeURIComponent(girlName) : '');
@@ -4248,6 +4504,11 @@ addEventListener('keydown', e => {
 });
 
 resize();
+{
+  const tip = document.getElementById('touchTip');
+  if (!cam.on) tip.remove();
+  else setTimeout(() => { tip.style.opacity = 0; setTimeout(() => tip.remove(), 1300); }, 7000);
+}
 plant();
 jumpToSeason();
 swatchBtns[mainPal].classList.add('on');
@@ -4255,6 +4516,7 @@ let last = performance.now();
 function frame(now) {
   const dt = Math.min(.033, (now - last) / 1000); last = now;
   T += dt; time += dt;
+  updateCam(dt);
   simulate(dt);
   render(dt);
   requestAnimationFrame(frame);

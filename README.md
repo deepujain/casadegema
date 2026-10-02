@@ -64,15 +64,15 @@ Winter opens on a long night: the lanterns are out and their fireflies rest in t
 | 🖍️ Name | Pick up the chalk from the easel's ledge, tap the board, and write her name (with `?name=` it's already there; sign it once more). |
 | 🐦 Robin | Pick up the twig and tap or brush the snowy wall pots with it (any part of the twig works). Each pot sheds a little snow; one of them has a robin. |
 
-Find the last winter gem and "Happy Daughter's Day, *name*" comes out of the chimney letter by letter, each one floating up to its place, with hearts; then it gently fades.
+Find the last winter gem and "Happy Birthday, *name*" comes out of the chimney letter by letter, each one floating up to its place, with hearts, while a stream of colorful balloons squeezes out of the chimney and floats away into the night sky; then it gently fades.
 
 **Stuck?** Tap Oli for a hint. A feather also roams the garden: when the little alarm clock at the corner of the house runs down (a random 18–48 seconds), it rings and the feather flies to your next gem. Tap the clock to ring it early.
 
-**Really stuck?** Every half a minute or so a little teddy bear peeks out from behind the casa: over the chimney, over the roof, around the tower, or around the far corner by the clock. Tap him before he ducks back and he shows you every gem still hidden this season, one by one (freeing the kite, opening the jar, building the snowman and so on).
+**Really stuck?** Every half a minute or so a perky-eared puppy peeks out from behind the casa: over the chimney, over the roof, around the tower, or around the far corner by the clock. Tap him before he ducks back and, with a little woof, he sniffs out every gem still hidden this season, one by one (freeing the kite, opening the jar, building the snowman and so on).
 
 **Keys:** `Esc` puts down whatever you're holding · `M` toggles music · `R` starts the year over from spring.
 
-**Phones:** touch works — taps snap to the nearest thing you can interact with. Landscape gives the biggest garden.
+**Phones:** the garden opens zoomed in to a finger-friendly size, in portrait or landscape. Drag to look around and pinch to zoom; Oli's hints and the finale glide the view to where you need to look. Taps snap to the nearest thing you can interact with. The butterfly sits just above your fingertip, and anything you carry rides above it too: the watering can pours right above your finger, and the twig, rake and chalk stay in sight. Carry a tool to the edge of the screen and the view follows. To put a tool back, tap its spot. The gems and how you find them are the same as on a laptop.
 
 ### Personalize it
 
