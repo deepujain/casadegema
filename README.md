@@ -50,7 +50,7 @@ Her little sister walks out of the front door and holds her hand for the rest of
 | ☂️ Umbrella | Tap the grey cloud to make it rain, then tap the umbrella by the wall. She tilts it over her little sister so it keeps them both dry. |
 | 🎃 Pumpkin | Water the little patch of soil in front of the pot. |
 | 🦉 Night | Turn both lanterns off: sunset, then night — Oli hoots and flies a loop around the tree. |
-| 🐭 Mouse | Press on a wall pot and wiggle it until a field mouse with an acorn peeks out. |
+| 🐭 Mouse | A little tail pokes out of one wall pot and it rustles now and then. Tap that pot (or press and wiggle it) and a field mouse with an acorn peeks out. |
 
 ### ❄️ Winter (5 gems)
 
@@ -58,7 +58,7 @@ Winter opens on a long night: the lanterns are out and their fireflies rest in t
 
 | Gem | How to find it |
 | --- | --- |
-| ⛄ Snowman | Tap the three snowy mounds to roll snowballs, then tap the snowman to give him a nose. |
+| ⛄ Snowman | Tap the three snowy mounds to roll snowballs; once he is stacked his carrot nose pops on by itself. |
 | 🔥 Hearth | Tap the cold chimney. Smoke rises and the windows glow. |
 | ✨ Lights | Tap the balcony railing to string up fairy lights. |
 | 🖍️ Name | Pick up the chalk from the easel's ledge, tap the board, and write her name (with `?name=` it's already there; sign it once more). |
@@ -68,7 +68,7 @@ Find the last winter gem and "Happy Birthday, *name*" comes out of the chimney l
 
 **Stuck?** Tap Oli for a hint. A feather also roams the garden: when the little alarm clock at the corner of the house runs down (a random 18–48 seconds), it rings and the feather flies to your next gem. Tap the clock to ring it early.
 
-**Really stuck?** Every half a minute or so a perky-eared puppy peeks out from behind the casa: over the chimney, over the roof, around the tower, or around the far corner by the clock. Tap him before he ducks back and, with a little woof, he sniffs out every gem still hidden this season, one by one (freeing the kite, opening the jar, building the snowman and so on).
+**Really stuck?** Every half a minute or so a perky-eared puppy peeks out from behind the casa: over the chimney, over the roof, around the tower, or around the far corner by the clock. He says woof woof as he pops up, ears wiggling. Tap him before he ducks back and he sniffs out every gem still hidden this season, one by one (freeing the kite, opening the jar, building the snowman and so on).
 
 **Keys:** `Esc` puts down whatever you're holding · `M` toggles music · `R` starts the year over from spring.
 
@@ -79,8 +79,10 @@ Find the last winter gem and "Happy Birthday, *name*" comes out of the chimney l
 Add a name to the link and it's already written on the easel and in the final message:
 
 ```
-https://deepujain.github.io/casadegema/?name=Shanaya
+https://deepujain.github.io/casadegema/?name=Shanaya&from=Dad
 ```
+
+With a name, the game opens on a little birthday card for her (signed by `from`, if you add it). Without a name, the card offers to make that link for someone and share or copy it. "Just play the garden" skips it.
 
 Add `&season=summer`, `autumn` or `winter` to start later in the year (everything before it is already done).
 
@@ -100,7 +102,7 @@ To host it, drop `index.html` anywhere that serves static files (GitHub Pages, N
 - **Rendering:** Canvas 2D on a fixed 1200×950 logical stage scaled to the window. The house, sky and ground are pre-rendered once into offscreen layers using a watercolor "wash" technique (layered, low-alpha, randomly deformed polygons + paper grain). Small screens crop the empty margins.
 - **Tree:** procedurally grown segments with spring physics; grabbing a branch bends its whole parent chain. Petals are attached along segments and detach when shaken hard, then flutter down and settle on the ground.
 - **Day cycle:** multiply-tinted overlays that ease between day, dusk, night and dawn based on how many lanterns are off.
-- **Seasons:** a `CHAPTERS` array (spring, summer, autumn, winter) holds each season's gems, Oli's lines, a color grade and weather. Trees follow the year: blossoms and fresh leaves in spring, full green leaves in summer, turning leaves in autumn, and bare branches in winter where snow slowly builds up as it falls. Winter adds snow on the roofs and courtyard, and autumn a rain cloud.
+- **Seasons:** a `CHAPTERS` array (spring, summer, autumn, winter) holds each season's gems, Oli's lines, a color grade and weather. Trees follow the year: mostly blossoms with a few fresh leaves in spring, full green leaves in summer, turning leaves in autumn, and bare branches in winter where snow slowly builds up as it falls. Winter adds snow on the roofs and courtyard, and autumn a rain cloud.
 - **Oli:** a speech bubble narrates each season, reacts to discoveries, and gives a hint when tapped.
 - **Music:** fully generative Web Audio — an Andalusian cadence (Am–G–F–E) with pads, plucks, chimes and a convolution reverb, plus petal-flutter, pouring water and rain, pops, owl hoots and lantern chimes. Silent until you tap the speaker.
 - **Gems:** the current season's gem list drives the counter, the fly-to-counter effect, Oli's hints and the feather.

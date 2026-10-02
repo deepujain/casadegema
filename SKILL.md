@@ -37,7 +37,7 @@ Anything drawn before the overlays gets tinted by the season and the night (obje
 - `buildCounter()` rebuilds the gem icons, the season dots and the "*season* gems n/5" label. Every season has five gems, and the fifth is always a wall-pot visitor (`nookGem(n)`); keep the counts equal when adding gems.
 - `updateSeason(dt)` eases `SLV[i]` (0–1 visibility of each season) and, when every gem is done and none is mid-flight, has Oli say the `outro`, waits ~5 s, then calls `setSeason(season + 1)`.
 - `setSeason(n)` swaps the gem list, resets the hint timer, drops any held tool, relights the lanterns, sets up that season's objects, and starts the transition (`spawnSwirl`: sun, leaf gust or snowfall, recorded in `trans`) plus Oli's `intro`.
-- Tree sprites come from `seasonSprite(p)` (spring: `tree.pal` blossoms with a third `leafSpr`; summer: all `summerLeaf`; autumn: `SPRITES.autumn`; winter: `null`, meaning bare). In winter `snowAcc` climbs 0→1 over ~45 s; a bare petal slot shows a small `SPRITES.snow` clump once `snowOn(p)` (its random `p.th` is under `snowAcc * SNOW_COVER`), and flatter branch segments get a white line on top. `tree.pal` always keeps the chosen bloom color. `recolor(tree, pal, delay)` flags petals to swap; `arriveDelay(n, x, y)` times each swap to when the season's element reaches that spot.
+- Tree sprites come from `seasonSprite(p)` (spring: `tree.pal` blossoms, with `leafSpr` only for the ~9% `p.green` slots; summer: all `summerLeaf`; autumn: `SPRITES.autumn`; winter: `null`, meaning bare). In winter `snowAcc` climbs 0→1 over ~45 s; a bare petal slot shows a small `SPRITES.snow` clump once `snowOn(p)` (its random `p.th` is under `snowAcc * SNOW_COVER`), and flatter branch segments get a white line on top. `tree.pal` always keeps the chosen bloom color. `recolor(tree, pal, delay)` flags petals to swap; `arriveDelay(n, x, y)` times each swap to when the season's element reaches that spot.
 - Painted plants use `PL` (from `PLANT_COLS[season]`). `repaintPlants(n)` repaints the background and foreground layers; `drawOldLayer` keeps the previous layer visible, clipped to where the new season has not arrived yet (outside a growing circle from `SUN`, right of the gust front, below the snow line). `gust(t)` adds to `wind()` during the autumn transition.
 - Draw seasonal things with `globalAlpha = SLV[i]` so they fade in and out with the cross-fade. `drawSeasonTint` applies the per-season color grade from `TINTS`; `DRIFT[season]` sets how often petals fall on their own (many in autumn, none in winter).
 - `drawMessage` only runs in the last chapter, so the birthday ending comes after winter.
@@ -94,7 +94,7 @@ Wall-pot visitors: `NOOKS[season]` (nest, ladybug, mouse, robin) hides in `WALL_
 - From summer on, the little sister (`drawSister`, standing at `SIS {646, 930}`, scale `.86`) walks from the door showing her face, then turns her back and eases `sister.hold` to 1. `drawGirl` then reaches her left hand out past the dress (`GIRL.left`), and the sister's right hand meets it. Her clothes come from `SIS_WEAR[season]`; she stays for the rest of the year.
 - The kite's string runs from `GIRL.hand` (set every frame by `drawGirl`) to the kite's crossbar, both while stuck and in flight. On release `kite.from` is read before the state changes to `'rise'`, so it lifts out of its own branch; `kiteUp()` and `umbUp()` keep her arm raised. `umbUp()` is true only while it rains (`umbrella.open` just records that the umbrella was found). `canopy(x, y, r)` draws the open umbrella as a dome: apex on top, six panels curving down to a scalloped rim centered at `(x, y)`. Held up, it tilts from her hand to midway between `GIRL` and `SIS` and widens (r up to 68) to cover both sisters; `umbrella.shade` records the sheltered span so raindrops splash on the canopy instead of falling on them.
 
-Puppy: `pup` peeks from one of `PUP_SPOTS` (chimney top, roof ridge, tower left edge, right house corner; `dir` up/left/right) every 25–40 s while gems remain, once `mainTree` exists and the season isn't ending. `drawPup` (right after the season back) clips him to the far side of that edge so he looks hidden behind the house, with paws over the edge: a golden head with perky ears drawn behind it that stick out above, with folded tips that flick as he pops up, an eye patch, a white muzzle, a shiny nose, and a panting tongue while he helps. `pupAt` hit-tests his head (hover `'pup'`, touch anchor via `seasonAnchors`). `tapPup` plays `Music.woof()` and starts `pup.help`, which every 1.3 s calls `pupShow(s)` for the next remaining gem, using the gem's own action where there is one (nook `stirNook`, kite rise, sunflower/pumpkin sprout, `openJar`, rain + `openUmbrella`, snowman built with nose, `lightHearth`, `stringLights`) and plain `found(id)` otherwise. `setSeason` resets him.
+Puppy: `pup` peeks from one of `PUP_SPOTS` (chimney top, roof ridge, tower left edge, right house corner; `dir` up/left/right) every 25–40 s while gems remain, once `mainTree` exists and the season isn't ending. `drawPup` (right after the season back) clips him to the far side of that edge so he looks hidden behind the house, with paws over the edge: a golden head with perky ears drawn behind it that stick out above, with folded tips that wiggle the whole time he is out, flick as he pops up and waggle every 2.2 s, an eye patch, a white muzzle, a shiny nose, and a panting tongue while he helps. `pupAt` hit-tests his head (hover `'pup'`, touch anchor via `seasonAnchors`). He woofs (`Music.woof()`) as he pops up. `tapPup` woofs again and starts `pup.help`, which every 1.3 s calls `pupShow(s)` for the next remaining gem, using the gem's own action where there is one (nook `stirNook`, kite rise, sunflower/pumpkin sprout, `openJar`, rain + `openUmbrella`, snowman built with nose, `lightHearth`, `stringLights`) and plain `found(id)` otherwise. `setSeason` resets him.
 
 ## Hints, feather, clock
 
@@ -110,7 +110,7 @@ Puppy: `pup` peeks from one of `PUP_SPOTS` (chimney top, roof ridge, tower left 
 
 ## Sound
 
-`Music` is an IIFE around one `AudioContext`, created lazily on the first speaker tap. Every sound function returns early unless `on` is true, so the game is silent until the player finds the music gem. To add a sound: write a small function inside `Music` that schedules oscillators or noise through `bus` (goes to reverb) or `master`, and add it to the returned object. Keep one-shot sounds short and let their gain envelopes decay — long tails stack up and read as "looping". `Music.unlock()` resumes audio on `touchend` for iOS.
+`Music` is an IIFE around one `AudioContext`, created lazily on the first speaker tap. Every sound function returns early unless `on` is true, so the game is silent until the player finds the music gem. To add a sound: write a small function inside `Music` that schedules oscillators or noise through `bus` (goes to reverb) or `master`, and add it to the returned object. Keep one-shot sounds short and let their gain envelopes decay — long tails stack up and read as "looping". `Music.unlock()` runs on every `pointerup`/`touchend`: the first one builds the engine silently (master at 0) so iOS lets audio start, later ones resume it. `woof` is the one sound that plays with the music off, straight to `ac.destination`.
 
 ## Touch
 
@@ -129,6 +129,7 @@ Puppy: `pup` peeks from one of `PUP_SPOTS` (chimney top, roof ridge, tower left 
 ## Customizing
 
 - **Message:** `MSG` for the first line; the name comes from the easel or `?name=` (`girlName`, max 16 chars).
+- **Birthday card:** the last `<script>` builds the `#bday` overlay. With `?name=` (and optional `&from=`) it greets her; without one it offers a form that makes that link and shares it (`navigator.share` on phones) or copies it. It stops its own key and pointer events from reaching the garden. In winter a name that is already set lights the name gem shortly after Oli's intro (`nameGemAt`).
 - **Oli's lines:** `intro`/`outro` in `CHAPTERS`, `tip`/`say` on each gem.
 - **Petal colors:** `PALETTES` (each tree gets a distinct one; `recolor(tree, pal)` swaps sprites via `seasonSprite`). Seasonal sprite sets (`SPRITES.autumn`, `SPRITES.snow`) are kept out of `PALETTES` so they never show up in the palette picker.
 - **Title:** the `#hint` element and `<title>`.
@@ -194,7 +195,7 @@ A YEAR IN FOUR SEASONS (about 10–15 minutes)
   Trees, bushes, geraniums and window boxes change color where the element has reached;
   the color grade cross-fades, the counter resets and Oli introduces the next season.
 - Trees and plants match the season; only spring has flowers on the trees. Spring:
-  blossoms among fresh green leaves (about a third leaves), green bushes, red geraniums.
+  mostly blossoms with a few fresh green leaves (under a tenth leaves), green bushes, red geraniums.
   Summer: warm golden grade, trees are full of deep green leaves and no flowers, brighter
   geraniums. Autumn: amber grade, every tree and bush turns orange, red and gold with
   leaf-shaped sprites, leaves drift down on their own. Winter: cool blue grade; as the
@@ -285,8 +286,8 @@ WINTER GEMS (5)
 - Winter opens on a long night: both lanterns are out and their fireflies rest in the bare
   tree. Relighting them brings the day back.
 1. Snowman: tap three snowy mounds; each rolls a growing snowball that stacks at the right
-   edge of the courtyard. Then tap the snowman to give him a carrot nose (he has coal eyes, twig arms and
-   a blue scarf).
+   edge of the courtyard. Once all three are stacked his carrot nose pops on by itself (he has coal eyes,
+   twig arms and a blue scarf).
 2. Hearth: tap the cold chimney; smoke puffs rise and every window glows warmly.
 3. Lights: tap the balcony railing; colorful fairy lights string themselves along it and
    twinkle, brighter at night.

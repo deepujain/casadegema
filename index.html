@@ -62,6 +62,50 @@
   #found .seasons i{width:7px;height:7px;border-radius:50%;background:rgba(160,130,110,.22);transition:background .6s,box-shadow .6s}
   #found .seasons i.on{background:var(--c)}
   #found .seasons i.now{box-shadow:0 0 0 2px rgba(255,255,255,.9),0 0 6px var(--c)}
+
+  /* ---------- birthday welcome ---------- */
+  #bday{position:fixed;inset:0;z-index:50;display:grid;place-items:center;padding:16px;cursor:auto;
+    background:radial-gradient(ellipse at 50% 40%,rgba(255,240,232,.55),rgba(122,98,80,.38));backdrop-filter:blur(3px);
+    transition:opacity .5s}
+  #bday.out{opacity:0;pointer-events:none}
+  #bday .card{position:relative;width:min(380px,92vw);max-height:92vh;overflow:auto;box-sizing:border-box;padding:26px 24px 20px;
+    text-align:center;border-radius:28px;background:linear-gradient(160deg,#fffaf3,#ffeef0 70%,#fff4e6);
+    box-shadow:0 18px 50px rgba(120,60,50,.28),inset 0 0 0 2px rgba(255,255,255,.8);
+    font:italic 15px/1.45 Georgia,serif;color:#7a6250;animation:bdayIn .7s cubic-bezier(.2,1.4,.4,1) backwards}
+  #bday.out .card{transform:scale(.92);transition:transform .5s}
+  @keyframes bdayIn{from{opacity:0;transform:translateY(24px) scale(.8) rotate(-3deg)}}
+  #bday .cake{font-size:54px;line-height:1;display:inline-block;animation:bdayBob 2.2s ease-in-out infinite;filter:drop-shadow(0 6px 6px rgba(179,22,79,.18))}
+  @keyframes bdayBob{0%,100%{transform:translateY(0) rotate(-4deg)}50%{transform:translateY(-6px) rotate(4deg)}}
+  #bday h1{margin:6px 0 2px;font:400 clamp(34px,8vw,44px)/1.15 "Great Vibes","Snell Roundhand",cursive;
+    background:linear-gradient(90deg,#b3164f,#e23f67,#ef7f45);-webkit-background-clip:text;background-clip:text;color:transparent}
+  #bday h1 .who{display:block;font-size:1.12em}
+  #bday p{margin:6px 0 0}
+  #bday .from{margin-top:10px;font:600 22px Caveat,'Marker Felt',cursive;color:#b3164f;font-style:normal}
+  #bday form{display:grid;gap:8px;margin-top:14px}
+  #bday input{-webkit-user-select:text;user-select:text;box-sizing:border-box;width:100%;padding:9px 14px;border-radius:999px;
+    border:2px dashed #e9b8c4;background:rgba(255,255,255,.75);outline:none;text-align:center;
+    font:600 22px Caveat,'Marker Felt',cursive;color:#7a3a4a}
+  #bday input:focus{border-color:#e23f67;background:#fff}
+  #bday input::placeholder{color:#c9a3ac}
+  #bday .go{margin-top:14px;width:100%;padding:11px 18px;border:0;border-radius:999px;cursor:pointer;
+    font:600 24px Caveat,'Marker Felt',cursive;color:#fff;background:linear-gradient(90deg,#e23f67,#ef7f45);
+    box-shadow:0 6px 16px rgba(226,63,103,.35);transition:transform .15s,box-shadow .15s}
+  #bday form .go{margin-top:4px}
+  #bday .go:hover{transform:translateY(-2px) scale(1.02);box-shadow:0 9px 20px rgba(226,63,103,.4)}
+  #bday .go:active{transform:scale(.98)}
+  #bday button:focus{outline:none}
+  #bday button:focus-visible{outline:3px solid #ffc2d1;outline-offset:3px}
+  #bday .skip{margin-top:10px;background:none;border:0;cursor:pointer;font:italic 14px Georgia,serif;color:#9a7e6a;text-decoration:underline dotted}
+  #bday .done{margin-top:12px;padding:10px 12px;border-radius:16px;background:rgba(255,255,255,.7);font-size:14px}
+  #bday .done a{color:#b3164f;font-weight:bold}
+  #bday .x{position:absolute;right:12px;top:10px;width:30px;height:30px;border:0;border-radius:50%;cursor:pointer;
+    background:rgba(255,255,255,.6);color:#9a7e6a;font:18px/30px Georgia,serif}
+  #bday .float{position:fixed;bottom:-60px;pointer-events:none;font-size:var(--s);animation:bdayRise var(--d) linear var(--w) infinite}
+  @keyframes bdayRise{0%{transform:translate(0,0) rotate(-6deg)}50%{transform:translate(var(--x),-55vh) rotate(6deg)}100%{transform:translate(0,-115vh) rotate(-6deg)}}
+  #bday .bit{position:fixed;top:-12px;width:8px;height:12px;border-radius:2px;pointer-events:none;background:var(--c);
+    animation:bdayFall var(--d) linear var(--w) infinite}
+  @keyframes bdayFall{to{transform:translate(var(--x),110vh) rotate(720deg)}}
+  @media (prefers-reduced-motion:reduce){#bday .float,#bday .bit{display:none}#bday .cake,#bday .card{animation:none}}
 </style>
 </head>
 <body>
@@ -653,14 +697,14 @@ for (const n of PAL_NAMES) SPRITES[n] = PALETTES[n].map(([d, l]) => makeSprite(d
 const leafSpr = [['#4f7a36', '#8fb465'], ['#5f8a3f', '#a6c77a']].map(([d, l]) => makeSprite(d, l, true));
 const summerLeaf = [['#2f6b2a', '#6fb04a'], ['#3f7a2e', '#8cc45a'], ['#2a5e26', '#5f9e3e']].map(([d, l]) => makeSprite(d, l, true));
 
-// spring: blossoms among fresh green leaves; summer: full deep green leaves, no flowers;
+// spring: mostly blossoms with a few fresh green leaves; summer: full deep green leaves, no flowers;
 // autumn: turning leaves; winter: bare branches (null), where snow settles as it falls (snowOn)
 function seasonSprite(p) {
   const si = p.si;
   if (season === 1) return summerLeaf[si % 3];
   if (season === 2) return SPRITES.autumn[si];
   if (season === 3) return null;
-  return p.green || si >= 4 ? leafSpr[si % 2] : SPRITES[p.tree.pal][si];
+  return p.green ? leafSpr[si % 2] : SPRITES[p.tree.pal][si];
 }
 let snowAcc = 0;
 const SNOW_COVER = .6;
@@ -2095,7 +2139,7 @@ function shakeTarget() {
 const NOOKS = [
   { id: 'nest', color: '#c98a4b', tip: 'The blue pots on the tower wall look thirsty... and one of them is peeping.', say: 'A nest of baby birds! Cheep, cheep!' },
   { id: 'ladybug', color: '#e53935', tip: 'The pots on the tower wall are thirsty in this heat. Water them, or let your butterfly rest on one... someone tiny may come to say hello.', say: 'A ladybug! Make a wish.' },
-  { id: 'mouse', color: '#a47148', tip: 'Something rustles in a pot on the tower wall. Give the pots a gentle wiggle!', say: 'A little field mouse, saving an acorn for winter!' },
+  { id: 'mouse', color: '#a47148', tip: 'Something rustles in a pot on the tower wall... see that little tail poking out? Tap that pot!', say: 'A little field mouse, saving an acorn for winter!' },
   { id: 'robin', color: '#d9542b', tip: 'The pots on the tower wall are heavy with snow. Pick up the twig and tap the pots to knock it off... someone is hiding under there!', say: "A robin! Winter's little friend." },
 ];
 const nook = { pot: Math.random() * WALL_POTS.length | 0, t0: 0, puffs: [], bloom: new Map(), grab: null, restAt: -1, rested: -1, rest: 0, rx: 0, ry: 0, pokeAt: -1, poke: 0, px: 0, py: 0 };
@@ -2719,17 +2763,19 @@ const Music = (() => {
       t += len + .04 + Math.random() * .08;
     }
   }
-  // a small, soft puppy "wuf-wuf": a quick downward sweep through a lowpass
+  // a small, soft puppy "wuf-wuf": a quick downward sweep through a lowpass.
+  // He woofs even before the music is on, straight to the speakers, once a tap has primed the audio.
   function woof() {
-    if (!on) return;
-    const t0 = ac.currentTime + .02;
+    if (!ac) return;
+    if (ac.state !== 'running') ac.resume();
+    const t0 = ac.currentTime + .02, out = on ? bus : ac.destination, vol = on ? .08 : .07;
     for (const [dt, f0] of [[0, 520], [.22, 560]]) {
       const t = t0 + dt, o = ac.createOscillator(), lp = ac.createBiquadFilter(), gn = ac.createGain();
       o.type = 'triangle';
       o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f0 * .45, t + .12);
       lp.type = 'lowpass'; lp.frequency.value = 1400;
-      gn.gain.setValueAtTime(0, t); gn.gain.linearRampToValueAtTime(.08, t + .012); gn.gain.exponentialRampToValueAtTime(.0005, t + .14);
-      o.connect(lp); lp.connect(gn); gn.connect(bus); o.start(t); o.stop(t + .16);
+      gn.gain.setValueAtTime(0, t); gn.gain.linearRampToValueAtTime(vol, t + .012); gn.gain.exponentialRampToValueAtTime(.0005, t + .14);
+      o.connect(lp); lp.connect(gn); gn.connect(out); o.start(t); o.stop(t + .16);
     }
   }
   function pad(chord, t, dur) {
@@ -2802,8 +2848,11 @@ const Music = (() => {
     const t = ac.currentTime, notes = rising ? [81, 84, 88, 93] : [88, 84, 81];
     notes.forEach((m, i) => chime(m, t + i * .12, .035));
   }
+  // browsers (iOS especially) only let audio start inside a tap, so the first tap builds the engine silently
+  // (master stays at 0 until the music gem) and later taps keep it awake
   function unlock() {
-    if (!ac || !on || ac.state === 'running') return;
+    if (!ac) { try { init(); } catch (e) { return; } }
+    if (ac.state === 'running') return;
     ac.resume();
     const b = ac.createBufferSource(); b.buffer = ac.createBuffer(1, 1, 22050); b.connect(ac.destination); b.start();
   }
@@ -2876,7 +2925,7 @@ function owlHint() {
   const next = SURPRISES.find(s => !s.done);
   if (!mainTree) say('Pick up the watering can and give the tree bed a drink!', 5);
   else if (next) { say(typeof next.tip === 'function' ? next.tip() : next.tip, 5.5); ringClock(); }
-  else say(season < CHAPTERS.length - 1 ? 'All found! Hold on to your feathers...' : 'Hoo-hoo! Happy Birthday!', 4);
+  else say(season < CHAPTERS.length - 1 ? 'All found! Hold on to your feathers...' : `Hoo-hoo! Happy Birthday${girlName ? ', ' + girlName : ''}!`, 4);
 }
 function wrapText(text, maxW) {
   const out = []; let line = '';
@@ -2921,9 +2970,11 @@ function drawTalk(dt) {
 }
 
 /* chapter flow */
-let seasonGo = 0, introSaid = false;
+let seasonGo = 0, introSaid = false, nameGemAt = 0;
 function setSeason(n, quiet) {
   season = n; SURPRISES = CHAPTERS[n].gems;
+  // A name already on the board (from the link or written earlier) lights its gem once Oli has said hello to winter.
+  nameGemAt = n === 3 ? time + (quiet ? 2 : 7) : 0;
   buildCounter();
   lastFound = time; hintUntil = 0; hintWait = nextWait();
   can.held = twig.held = rake.held = false;
@@ -2955,6 +3006,9 @@ function setSeason(n, quiet) {
 function updateSeason(dt) {
   for (let i = 0; i < SLV.length; i++) SLV[i] += ((i === season ? 1 : 0) - SLV[i]) * Math.min(1, dt * .6);
   if (!introSaid && time > 4) { introSaid = true; say(CHAPTERS[season].intro, 7); }
+  if (season === 3 && nameGemAt && time > nameGemAt && girlName && !SURPRISES.find(s => s.id === 'name')?.done) {
+    found('name', [EASEL.bx + EASEL.bw / 2, EASEL.by - 6]);
+  }
   if (season < CHAPTERS.length - 1) {
     const all = SURPRISES.every(s => s.done) && !gemFx.length;
     if (all && !seasonGo && time - lastFound > 2.5) { seasonGo = time; say(CHAPTERS[season].outro, 5); }
@@ -3771,7 +3825,18 @@ const SNOWMAN = { x: 1074, y: 944 };
 const MOUNDS = [{ x: 340, y: 944 }, { x: 812, y: 945 }, { x: 922, y: 947 }].map(m => ({ ...m, used: false }));
 const BALL_R = [17, 12, 8.5];
 const snowman = { balls: 0, rolling: [], nose: 0 };
-function moundAt(x, y) { return season === 3 && SLV[3] > .5 ? MOUNDS.find(m => !m.used && Math.abs(x - m.x) < 20 && Math.abs(y - m.y + 3) < 12) : null; }
+// generous reach: a tap on the snow close to a mound scoops it, so the butterfly does not have to land exactly on it
+function moundAt(x, y) {
+  if (season !== 3 || SLV[3] <= .5) return null;
+  if (onArtPalette(x, y) || potAt(x, y) || lampAt(x, y)) return null;
+  let best = null, bd = Infinity;
+  for (const m of MOUNDS) {
+    if (m.used || Math.abs(x - m.x) > 46 || y < m.y - 34 || y > m.y + 22) continue;
+    const d = Math.hypot(x - m.x, y - m.y);
+    if (d < bd) { bd = d; best = m; }
+  }
+  return best;
+}
 function snowmanAt(x, y) { return season === 3 && snowman.balls >= 3 && !snowman.nose && Math.abs(x - SNOWMAN.x) < 22 && y > SNOWMAN.y - 80 && y < SNOWMAN.y + 4; }
 function ballY(i) { let y = SNOWMAN.y; for (let j = 0; j < i; j++) y -= BALL_R[j] * 1.75; return y - BALL_R[i]; }
 function rollBall(m) {
@@ -3805,8 +3870,13 @@ function drawSnowman(dt) {
     drawSnowball(x, y, r);
     if (u >= 1) {
       snowman.rolling.splice(j, 1); snowman.balls++;
-      if (snowman.balls === 3) say('He needs a nose... tap him!', 4);
+      if (snowman.balls === 3 && !snowman.nose) snowman.noseAt = time + .7;
     }
+  }
+  // the carrot goes on by itself once he is stacked
+  if (snowman.noseAt && time >= snowman.noseAt) {
+    snowman.noseAt = 0;
+    if (!snowman.nose) { snowman.nose = time; found('snowman', [SNOWMAN.x, SNOWMAN.y - 70]); }
   }
   if (snowman.balls >= 3) {
     const hx = SNOWMAN.x, hy = ballY(2), my = ballY(1);
@@ -4045,6 +4115,21 @@ function drawNest() {
   if (SLV[3] > .02) { ctx.globalAlpha = SLV[3]; ctx.fillStyle = '#fbfdff'; ctx.beginPath(); ctx.ellipse(-6, -.5, 4, 1.4, 0, 0, TAU); ctx.ellipse(6, -.5, 4, 1.4, 0, 0, TAU); ctx.fill(); }
   ctx.restore();
 }
+// before she finds him, the autumn mouse gives himself away: a tail curls over the rim and the pot rustles now and then
+function drawMouseTail() {
+  if (SLV[2] < .5) return;
+  const [x, y] = WALL_POTS[nook.pot];
+  if (!nook.rustleAt || time > nook.rustleAt) { if (nook.rustleAt) puffNook(nook.pot, 3); nook.rustleAt = time + rand(3.5, 6); }
+  const swish = Math.sin(time * 3.1) * .5 + Math.sin(time * 7.3) * .15;
+  ctx.save();
+  ctx.globalAlpha = SLV[2];
+  ctx.strokeStyle = '#8f7768'; ctx.lineWidth = 2.4; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(x + 4, y - 9);
+  ctx.bezierCurveTo(x + 10, y - 19, x + 18 + swish * 5, y - 18, x + 16 + swish * 8, y - 28 - swish * 3);
+  ctx.stroke();
+  ctx.fillStyle = '#f2b8c0'; ctx.beginPath(); ctx.arc(x + 16 + swish * 8, y - 28 - swish * 3, 1.3, 0, TAU); ctx.fill();
+  ctx.restore();
+}
 function drawNook(dt) {
   nookTools();
   for (let i = nook.puffs.length - 1; i >= 0; i--) {
@@ -4072,6 +4157,7 @@ function drawNook(dt) {
   }
   ctx.globalAlpha = 1;
   drawNest();
+  if (season === 2 && !nook.t0) drawMouseTail();
   if (!nook.t0 || season === 0) return;
   const [x, y] = WALL_POTS[nook.pot], t = time - nook.t0, k = clamp(t / .8, 0, 1), e = k * k * (3 - 2 * k);
   ctx.save();
@@ -4138,7 +4224,7 @@ function pupAt(x, y) {
 function tapPup() {
   pup.help = { next: time + .9, tried: new Set() }; pup.until = Infinity; pup.hop = time;
   Music.woof(); Music.sparkle(true);
-  say('Woof! The puppy can sniff out every hiding spot. Watch...', 3.5);
+  say('Woof! Coco can sniff out every hiding spot. Watch...', 3.5);
 }
 // the puppy does each gem's own action where he can, so the scene changes just as if she had found it
 function pupShow(s) {
@@ -4172,6 +4258,7 @@ function updatePup(dt) {
       if (cam.on) { const seen = opts.filter(s => inView(s.x, s.y, 30)); if (seen.length) opts = seen; }
       pup.spot = pup.last = opts[Math.floor(Math.random() * opts.length)];
       pup.t0 = time; pup.until = time + 5;
+      setTimeout(() => Music.woof(), 350);
       if (!pup.told && !talk.cur) { pup.told = true; say('Psst... someone is peeking out from behind the casa!', 4); }
     }
   }
@@ -4192,10 +4279,13 @@ function drawPup(dt) {
   else ctx.rect(s.x, s.y - 80, 120, 160);
   ctx.clip();
   ctx.translate(hx, hy); ctx.rotate(rot);
-  // ears perk up and out above the head with soft folded tips, and flick as he pops up
-  const flick = Math.max(0, 1 - (time - pup.t0) / .6) * Math.sin((time - pup.t0) * 18) * .3;
+  // ears perk up and out above the head with soft folded tips; they wiggle the whole time he is out,
+  // flick as he pops up, and give a quick waggle every couple of seconds
+  const up = time - pup.t0, burst = (up % 2.2) / .55;
+  const flick = Math.max(0, 1 - up / .9) * Math.sin(up * 20) * .4
+    + (up > 1 && burst < 1 ? Math.sin(burst * Math.PI * 4) * .28 * (1 - burst) : 0);
   for (const sd of [-1, 1]) {
-    const sw = Math.sin(time * 3 + sd) * .06 + flick + (pup.help ? Math.sin(time * 12) * .14 : 0);
+    const sw = Math.sin(time * 6 + sd * 1.3) * .12 + flick * (sd > 0 ? 1 : -.8) + (pup.help ? Math.sin(time * 14) * .18 : 0);
     ctx.save(); ctx.translate(sd * R * .58, -R * .5); ctx.rotate(sd * (.55 + sw)); ctx.scale(sd, 1);
     ctx.fillStyle = earC; ctx.beginPath();
     ctx.moveTo(-R * .36, R * .1); ctx.quadraticCurveTo(-R * .42, -R * .7, -R * .02, -R * 1.02);
@@ -4259,7 +4349,12 @@ function seasonHover(x, y) {
 function seasonTap(x, y) {
   if (pupAt(x, y)) { tapPup(); return true; }
   const n = nookAt(x, y);
-  if (n >= 0) { if (season === 2) nook.grab = { i: n, travel: 0, puffed: 0 }; else puffNook(n, 3); return true; }
+  if (n >= 0) {
+    // autumn: a tap rustles the pot, and the pot with the mouse gives it away; a wiggle still works too
+    if (season === 2) { nook.grab = { i: n, travel: 0, puffed: 0 }; puffNook(n, 4); if (n === nook.pot) stirNook(n); }
+    else puffNook(n, 3);
+    return true;
+  }
   if (jarAt(x, y)) { openJar(); return true; }
   if (cloudAt(x, y)) { startRain(); return true; }
   if (umbAt(x, y)) { openUmbrella(); return true; }
@@ -4522,6 +4617,113 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
+</script>
+<script>
+/* Birthday welcome. ?name=Mia&from=Dad greets Mia; with no name it offers to make that link for someone. */
+(() => {
+  const q = new URLSearchParams(location.search);
+  const who = (q.get('name') || '').trim().slice(0, 16);
+  const from = (q.get('from') || '').trim().slice(0, 24);
+  const el = (tag, props = {}, kids = []) => {
+    const n = Object.assign(document.createElement(tag), props);
+    n.append(...kids);
+    return n;
+  };
+
+  const root = el('div', { id: 'bday' });
+  root.setAttribute('role', 'dialog');
+  root.setAttribute('aria-modal', 'true');
+  root.setAttribute('aria-label', 'Happy Birthday');
+  // Keep typing and clicks here from reaching the garden underneath.
+  ['keydown', 'pointerdown', 'pointerup'].forEach(t => root.addEventListener(t, e => e.stopPropagation()));
+
+  const floats = ['🎈', '🎈', '🎈', '🎀', '💖', '🌸', '🎈', '✨', '🎈', '💝'];
+  floats.forEach((f, i) => {
+    const s = el('span', { className: 'float', textContent: f });
+    s.style.cssText = `left:${4 + i * 9.6}%;--s:${26 + (i * 7) % 18}px;--d:${9 + (i * 3) % 7}s;--w:${-(i * 1.3)}s;--x:${i % 2 ? 24 : -24}px`;
+    root.append(s);
+  });
+  const colours = ['#e23f67', '#ef7f45', '#f6c445', '#8bc6a2', '#9b8cdb', '#f49ac1'];
+  for (let i = 0; i < 28; i++) {
+    const b = el('i', { className: 'bit' });
+    b.style.cssText = `left:${(i * 37) % 100}%;--c:${colours[i % colours.length]};--d:${5 + (i * 7) % 6}s;--w:${-(i * .45)}s;--x:${(i % 5 - 2) * 30}px`;
+    root.append(b);
+  }
+
+  const close = () => {
+    root.classList.add('out');
+    setTimeout(() => root.remove(), 520);
+  };
+  const closeBtn = el('button', { className: 'x', type: 'button', textContent: '×', title: 'Close' });
+  closeBtn.setAttribute('aria-label', 'Close');
+  closeBtn.onclick = close;
+  root.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
+
+  let card;
+  if (who) {
+    const kids = [
+      closeBtn,
+      el('div', { className: 'cake', textContent: '🎂' }),
+      el('h1', {}, ['Happy Birthday', el('span', { className: 'who', textContent: who + '!' })]),
+      el('p', { textContent: 'Someone made you a little garden of hidden gems. Can you find them all?' }),
+    ];
+    if (from) kids.push(el('div', { className: 'from', textContent: 'with love, ' + from + ' 💌' }));
+    const go = el('button', { className: 'go', type: 'button', textContent: 'Open my garden 🎁' });
+    go.onclick = close;
+    kids.push(go);
+    card = el('div', { className: 'card' }, kids);
+    setTimeout(() => go.focus(), 700);
+  } else {
+    const nameIn = el('input', { maxLength: 16, placeholder: 'their name', autocomplete: 'off', spellcheck: false, required: true });
+    const fromIn = el('input', { maxLength: 24, placeholder: 'from (your name, optional)', autocomplete: 'off', spellcheck: false });
+    nameIn.setAttribute('aria-label', 'Birthday person\u2019s name');
+    fromIn.setAttribute('aria-label', 'Your name');
+    const make = el('button', { className: 'go', type: 'submit', textContent: 'Make their birthday link 🎁' });
+    const done = el('div', { className: 'done', hidden: true });
+    const form = el('form', {}, [nameIn, fromIn, make]);
+    form.onsubmit = async e => {
+      e.preventDefault();
+      const n = nameIn.value.trim().slice(0, 16);
+      if (!n) { nameIn.focus(); return; }
+      const p = new URLSearchParams({ name: n });
+      const f = fromIn.value.trim().slice(0, 24);
+      if (f) p.set('from', f);
+      const link = `${location.origin}${location.pathname}?${p}`;
+      let how = 'copied';
+      try {
+        if (navigator.share && matchMedia('(pointer:coarse)').matches) {
+          await navigator.share({ title: `Happy Birthday, ${n}! 🎂`, text: `A little birthday garden for ${n} 🌸`, url: link });
+          how = 'shared';
+        } else {
+          await navigator.clipboard.writeText(link);
+        }
+      } catch (err) {
+        if (err && err.name === 'AbortError') return;
+        how = 'ready';
+      }
+      const a = el('a', { href: link, textContent: 'Preview it', target: '_blank', rel: 'noopener' });
+      done.replaceChildren(
+        how === 'ready' ? 'Here is their link: ' : how === 'shared' ? 'Sent with love 💌 ' : 'Link copied! Send it to ' + n + ' 💌 ',
+        how === 'ready' ? el('a', { href: link, textContent: link }) : a,
+      );
+      done.hidden = false;
+    };
+    const skip = el('button', { className: 'skip', type: 'button', textContent: 'just play the garden \u2192' });
+    skip.onclick = close;
+    card = el('div', { className: 'card' }, [
+      closeBtn,
+      el('div', { className: 'cake', textContent: '🎂' }),
+      el('h1', { textContent: 'Wish someone a Happy Birthday' }),
+      el('p', { textContent: 'Make them a little garden of hidden gems, with their name in it.' }),
+      form,
+      done,
+      skip,
+    ]);
+    if (!matchMedia('(pointer:coarse)').matches) setTimeout(() => nameIn.focus({ preventScroll: true }), 700);
+  }
+  root.append(card);
+  document.body.append(root);
+})();
 </script>
 </body>
 </html>
